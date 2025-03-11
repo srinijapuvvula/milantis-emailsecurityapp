@@ -1,8 +1,6 @@
 import shutil
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from dns import resolver
-# from weasyprint import HTML
-# from xhtml2pdf import pisa
 from io import BytesIO
 # import pdfkit
 import dns.resolver
