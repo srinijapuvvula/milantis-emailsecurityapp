@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Lookup and DMARC Report Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #090d3c;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 100%;
+            padding: 40px;
+            background-color: #090d3c;
+            min-height: 100%;
+        }
+        h1, h2 {
+            color: #ffffff;
+            text-align: center;
+        }
+        .form-section {
+            margin-bottom: 40px;
+        }
+        label {
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        input[type="text"], input[type="file"] {
+            width: 60%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        button[type="submit"] {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #f68016;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button-link {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 18px;
+            color: white;
+            background-color: #f68016;
+            border-radius: 4px;
+            text-decoration: none;
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .button-link:hover {
+            background-color: #f68016;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DNS Lookup</h1>
+        <div class="form-section">
+            <form action="/emailsecurity-results" method="post">
+                <label for="domain">Enter domain:</label>
+                <input type="text" id="domain" name="domain" required>
+                <button type="submit">Lookup</button>
+            </form>
+        </div>
+
+        <h1>Fetch DMARC Report from Azure Storage</h1>
+        <div class="form-section">
+            <!-- Use the domain input from the DNS Lookup section -->
+            <a href="#" onclick="goToAggregateReports()" class="button-link">View Aggregate Reports</a>
+        </div>
+    </div>
+
+    <script>
+        function goToAggregateReports() {
+            const domain = document.getElementById("domain").value;
+            if (domain) {
+                // Redirect with domain as query parameter
+                window.location.href = `/aggregate_reports?domain=${encodeURIComponent(domain)}`;
+            }
+        }
+    </script>
+</body>
+</html>

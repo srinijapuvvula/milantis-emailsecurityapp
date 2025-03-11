@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMARC Aggregate Reports</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #090d3c;
+            color: #ffffff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #090d3c;
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            background-color: #444;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .form-section label {
+            margin-right: 10px;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+        .file-item {
+            margin: 10px 0;
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .file-item a {
+            color: #f68016;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DMARC Aggregate Reports</h1>
+
+        <!-- Date Range Filter Form -->
+        <form action="{{ url_for('filter_reports') }}" method="post" class="date-range-form">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" required>
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" required>
+            <button type="submit">Filter</button>
+        </form>
+
+        <!-- Display Filtered Files (if any) -->
+        <div class="file-list">
+            {% if blobs %}
+                {% for blob in blobs %}
+                    <div class="file-item">
+                        <a href="{{ url_for('view_report', blob_name=blob.name) }}" style="color: #d46a19;">
+                            {{ blob.domain }} - Begin Time: {{ blob.begin_time_est }}
+                        </a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No reports found for the selected date range.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+
+
+</html>

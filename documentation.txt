@@ -1,0 +1,135 @@
+this is updated code for sign up and login page, connected to local database for authentication. created a MySQL database. created user table. 
+commented signup and login page since, database is required to run those. 
+made default home page is index.html, so that you can test run
+
+
+
+Application Overview
+The application serves as a platform for analyzing DNS and email security-related data, including DMARC reports, DNS hosting information, and email security records. It features user authentication, report filtering, and visualization capabilities.
+
+
+
+
+
+Key Functionalities
+User Authentication:
+
+Signup: Create a user account.
+Login: Access the application with email and password.
+Logout: End the user session securely.
+DNS and Email Security Analysis:
+
+Perform DNS lookups, fetch email security records like DMARC, DKIM, SPF, and MX records.
+Identify DNS hosting providers and analyze TXT and MTA-STS records.
+DMARC Reports Management:
+
+View, parse, and analyze DMARC XML reports from Azure Blob Storage.
+Filter reports by date range or domain.
+User Dashboard:
+
+Display essential user data and a link to DMARC reports and email security analysis.
+
+
+
+
+Pages and Functionalities
+1. Signup Page (signup.html)
+Purpose: Allows users to register by providing their first name, last name, email, and password.
+Key Features:
+Hashes passwords securely using bcrypt.
+Displays a success or error message upon form submission.
+
+
+
+2. Login Page (login.html)
+Purpose: Enables users to log in using their email and password.
+Key Features:
+Verifies user credentials against stored hashed passwords.
+Redirects authenticated users to the dashboard.
+Displays error messages for incorrect credentials.
+
+
+
+3. Dashboard Page (dashboard.html)
+Purpose: Serves as a central hub for the logged-in user.
+Key Features:
+Displays a welcome message with the user’s email.
+Provides a logout link.
+
+
+
+4. Aggregate Reports Page (aggregate_reports.html)
+Purpose: Lists DMARC aggregate reports stored in Azure Blob Storage.
+Key Features:
+Filters reports by domain or date range.
+Displays available reports with details like domain, begin, and end times.
+Links to view detailed DMARC report analysis.
+
+
+
+5. Report Results Page (results.html)
+Purpose: Displays the parsed and analyzed data from DMARC XML files or email security lookups.
+Key Features:
+Shows DNS hosting, MX, DMARC, DKIM, SPF, and MTA-STS records.
+Highlights discrepancies or missing records for user attention.
+Displays detailed source IP information for DMARC reports.
+
+
+6. Index Page (index.html)
+Purpose: Serves as the landing page for performing DNS lookups or accessing other functionalities.
+Key Features:
+Accepts a domain as input for analysis.
+Redirects to the results.html page with the lookup results.
+
+
+
+
+
+
+Backend Overview
+Core Python Modules:
+Flask: Framework for routing and rendering templates.
+MySQL Connector: Handles database interactions for user authentication.
+Azure Storage Blob: Fetches DMARC reports from Azure Blob Storage.
+DNS Python: Performs DNS lookups.
+LXML: Parses DMARC XML files.
+Pytz: Converts time zones for accurate display.
+Bcrypt: Hashes and validates passwords securely.
+
+
+
+
+
+Important Routes
+Authentication:
+/signup: Handles user registration.
+/login: Manages user login.
+/logout: Clears session data and redirects to the login page.
+Report Management:
+/aggregate_reports: Lists DMARC reports with filter options.
+/view_report/<path:blob_name>: Parses and displays details of a selected report.
+/filter_reports: Filters reports by a date range.
+DNS and Email Security:
+/emailsecurity-results: Processes DNS and email security lookups for the provided domain.
+
+
+
+
+
+Azure Blob Storage Configuration
+Connection String: removed for security purposes
+app.secret_key: removed for security purposes
+Container Name: xmlzipfiles.
+File Handling:
+Extracts .xml from .zip or .gz files for DMARC analysis.
+Parses the XML files to display aggregated data.
+
+
+Database
+MySQL Configuration:
+Host: localhost
+User: root
+Password: removed for security purposes
+Database: my_database
+Users Table:
+Columns: id, first_name, last_name, email, password.
