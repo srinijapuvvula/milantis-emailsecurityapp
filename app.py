@@ -57,6 +57,7 @@ def get_db_connection():
         conn = pyodbc.connect(connection_string)
         return conn
     except Exception as e:
+        print(f"SERVER:DATABASE")
         print(f"❌ Database connection failed: {e}")
         return None
 
