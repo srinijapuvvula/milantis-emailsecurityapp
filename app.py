@@ -74,7 +74,7 @@ def signup():
 
         db = get_db_connection()
         if db is None:
-            flash("DB_SERVER:DB_NAME:SERVER","danger")
+            flash("DB_SERVER:DB_NAME:SERVER:DATABASE","danger")
            # flash("❌ Database connection failed!", "danger")
             return redirect('/signup')
 
@@ -107,7 +107,7 @@ def login():
 
         db = get_db_connection()
         if db is None:
-            flash("DB_SERVER:DB_NAME:SERVER","danger")
+            flash("DB_SERVER:DB_NAME:SERVER:DATABASE","danger")
             #flash("❌ Database connection failed!", "danger")
             return redirect('/login')
 
