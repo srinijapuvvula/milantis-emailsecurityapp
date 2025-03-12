@@ -20,20 +20,121 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 import requests
 import json
-
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Root@110697",
-        database="my_database"
-    )
-
+import pyodbc
 
 
 app = Flask(__name__)
 
-app.secret_key = '6f9e9b129d1a35222eaea8628a3708033dae8e897c2b4ba3'
+# Secret key for session management
+app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
+
+
+# Secure Database Connection Function
+
+def get_db_connection():
+    server = os.getenv("DB_SERVER", "milantis-emailsecurityapp.database.windows.net")
+    database = os.getenv("DB_NAME", "milantis-emailsecurity-db")
+    username = os.getenv("DB_USER", "milantis-admin")
+    password = os.getenv("DB_PASSWORD")  # Ensure this is set in Azure App Settings
+    driver = "{ODBC Driver 18 for SQL Server}"  # Ensure ODBC 18 is installed
+
+    if not password:
+        print("❌ Database password is missing! Set the DB_PASSWORD environment variable.")
+        return None
+
+    connection_string = (
+        f"DRIVER={driver};"
+        f"SERVER={server};"
+        f"DATABASE={database};"
+        f"UID={username};"
+        f"PWD={password};"
+        f"Encrypt=yes;"
+        f"TrustServerCertificate=no;"
+        f"Connection Timeout=30;"
+    )
+
+    try:
+        conn = pyodbc.connect(connection_string)
+        return conn
+    except Exception as e:
+        print(f"❌ Database connection failed: {e}")
+        return None
+
+# Signup Route
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email_signup')
+        password = request.form.get('password')
+
+        # Hash the password securely
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        db = get_db_connection()
+        if db is None:
+            flash("❌ Database connection failed!", "danger")
+            return redirect('/signup')
+
+        try:
+            cursor = db.cursor()
+            cursor.execute(
+                "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
+                (first_name, last_name, email, hashed_password)
+            )
+            db.commit()
+            cursor.close()
+            db.close()
+
+            flash("✅ Account created successfully!", "success")
+            return redirect('/login')
+
+        except Exception as e:  # Catch all exceptions
+            flash(f"❌ Database error: {str(e)}", "danger")
+            return render_template('signup.html')
+
+    return render_template('signup.html')
+
+
+# Login Route
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email_login')
+        password = request.form.get('password_login')
+
+        db = get_db_connection()
+        if db is None:
+            flash("❌ Database connection failed!", "danger")
+            return redirect('/login')
+
+        try:
+            cursor = db.cursor()
+
+            # Fetch user data from Azure SQL
+            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            db.close()
+
+            if user:  # Ensure user exists before unpacking tuple
+                user_id, stored_password = user  # Extract tuple values
+                
+                if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+                    session['user_id'] = user_id
+                    flash("✅ Logged in successfully!", "success")
+                    return redirect('/dashboard')
+                else:
+                    flash("❌ Invalid email or password.", "danger")
+            else:
+                flash("❌ Invalid email or password.", "danger")
+
+        except Exception as e:
+            flash(f"❌ Database error: {str(e)}", "danger")
+
+    return render_template('login.html')
+
 
 
 
@@ -254,65 +355,6 @@ def view_report(blob_name):
             )
     
     return "Invalid file type."
-
-
-# Signup Route
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
-        email = request.form.get('email_signup')
-        password = request.form.get('password')
-
-        # Hash the password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-        try:
-            db = get_db_connection()
-            cursor = db.cursor()
-            cursor.execute(
-                "INSERT INTO users (first_name, last_name, email, password) VALUES (%s, %s, %s, %s)",
-                (first_name, last_name, email, hashed_password.decode('utf-8'))
-            )
-            db.commit()
-            cursor.close()
-            db.close()
-            flash("Account created successfully!", "success")
-            return redirect('/login')
-        except mysql.connector.Error as e:
-            flash(f"Error: {e}", "danger")
-            return render_template('signup.html')
-    return render_template('signup.html')
-
-
-
-
-# Login Route
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email_login')
-        password = request.form.get('password_login')
-
-        try:
-            db = get_db_connection()
-            cursor = db.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cursor.fetchone()
-            cursor.close()
-            db.close()
-
-            if user and bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-                session['user_id'] = user['id']
-                flash("Logged in successfully!", "success")
-                return redirect('/dashboard')
-            else:
-                flash("Invalid email or password.", "danger")
-        except mysql.connector.Error as e:
-            flash(f"Error: {e}", "danger")
-    return render_template('login.html')
-
 
 
 
