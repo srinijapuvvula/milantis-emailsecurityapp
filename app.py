@@ -32,16 +32,7 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 # Secure Database Connection Function
 
 def get_db_connection():
-    server = "milantis-emailsecurityapp.database.windows.net"
-    database = "milantis-emailsecurity-db"
-    username = "milantis-admin"
-    password = "0Izilb14"  # Ensure this is set in Azure App Settings
     driver = "{ODBC Driver 18 for SQL Server}"  # Ensure ODBC 18 is installed
-
-    if not password:
-        print("❌ Database password is missing! Set the DB_PASSWORD environment variable.")
-        return None
-
     connection_string = (
         f"DRIVER={driver};"
         f"SERVER={DB_SERVER};"
@@ -57,7 +48,8 @@ def get_db_connection():
         conn = pyodbc.connect(connection_string)
         return conn
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f"{conn}")
+        #print(f"❌ Database connection failed: {e}")
         return None
 
 # Signup Route
@@ -74,7 +66,7 @@ def signup():
 
         db = get_db_connection()
         if db is None:
-           flash("{DB_SERVER}:{DB_NAME}:{SERVER}:{DATABASE}","danger")
+           
            # flash("❌ Database connection failed!", "danger")
             return redirect('/signup')
 
@@ -107,7 +99,7 @@ def login():
 
         db = get_db_connection()
         if db is None:
-            flash("{DB_SERVER}:{DB_NAME}:{SERVER}:{DATABASE}","danger")
+           
             #flash("❌ Database connection failed!", "danger")
             return redirect('/login')
 
