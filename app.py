@@ -57,8 +57,7 @@ def get_db_connection():
         conn = pyodbc.connect(connection_string)
         return conn
     except Exception as e:
-        print(f"DB_SERVER:DB_NAME")
-        #print(f"❌ Database connection failed: {e}")
+        print(f"❌ Database connection failed: {e}")
         return None
 
 # Signup Route
@@ -75,7 +74,8 @@ def signup():
 
         db = get_db_connection()
         if db is None:
-            flash("❌ Database connection failed!", "danger")
+            flash("DB_SERVER:DB_NAME","danger")
+           # flash("❌ Database connection failed!", "danger")
             return redirect('/signup')
 
         try:
@@ -107,7 +107,8 @@ def login():
 
         db = get_db_connection()
         if db is None:
-            flash("❌ Database connection failed!", "danger")
+            flash("DB_SERVER:DB_NAME","danger")
+            #flash("❌ Database connection failed!", "danger")
             return redirect('/login')
 
         try:
