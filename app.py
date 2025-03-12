@@ -44,13 +44,13 @@ def get_db_connection():
 
     connection_string = (
         f"DRIVER={driver};"
-        f"SERVER={server};"
-        f"DATABASE={database};"
-        f"UID={username};"
-        f"PWD={password};"
+        f"SERVER={DB_SERVER};"
+        f"DATABASE={DB_NAME};"
+        f"UID={DB_USER};"
+        f"PWD={DB_PASSWORD};"
         f"Encrypt=yes;"
         f"TrustServerCertificate=no;"
-        f"Connection Timeout=30;"
+        f"Connection Timeout=90;"
     )
 
     try:
@@ -74,7 +74,7 @@ def signup():
 
         db = get_db_connection()
         if db is None:
-            flash("DB_SERVER:DB_NAME:SERVER:DATABASE","danger")
+           flash("{DB_SERVER}:{DB_NAME}:{SERVER}:{DATABASE}","danger")
            # flash("❌ Database connection failed!", "danger")
             return redirect('/signup')
 
@@ -107,7 +107,7 @@ def login():
 
         db = get_db_connection()
         if db is None:
-            flash("DB_SERVER:DB_NAME:SERVER:DATABASE","danger")
+            flash("{DB_SERVER}:{DB_NAME}:{SERVER}:{DATABASE}","danger")
             #flash("❌ Database connection failed!", "danger")
             return redirect('/login')
 
