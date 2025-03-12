@@ -32,10 +32,10 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 # Secure Database Connection Function
 
 def get_db_connection():
-    server = os.getenv("DB_SERVER", "milantis-emailsecurityapp.database.windows.net")
-    database = os.getenv("DB_NAME", "milantis-emailsecurity-db")
-    username = os.getenv("DB_USER", "milantis-admin")
-    password = os.getenv("DB_PASSWORD")  # Ensure this is set in Azure App Settings
+    server = "milantis-emailsecurityapp.database.windows.net"
+    database = "milantis-emailsecurity-db"
+    username = "milantis-admin"
+    password = "0Izilb14"  # Ensure this is set in Azure App Settings
     driver = "{ODBC Driver 18 for SQL Server}"  # Ensure ODBC 18 is installed
 
     if not password:
