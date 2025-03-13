@@ -29,6 +29,12 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 # print(f"🔹 secret key is: {app.secret_key}")
 
+print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
+print(f"DB_NAME: {os.getenv('DB_NAME')}")
+print(f"DB_USER: {os.getenv('DB_USER')}")
+print(f"DB_PASSWORD: {'SET' if os.getenv('DB_PASSWORD') else 'MISSING'}")
+
+
 def get_db_connection():
     server = os.getenv("DB_SERVER")
     database = os.getenv("DB_NAME")
@@ -102,6 +108,40 @@ def signup():
 
     return render_template('signup.html')
 
+
+def login():
+    print("📌 Login function called")
+    email = request.form.get('email_login')
+    password = request.form.get('password_login')
+
+    db = get_db_connection()
+    if db is None:
+        print("❌ Database connection failed in login()")
+        flash("Database connection failed!", "danger")
+        return redirect('/login')
+
+    try:
+        cursor = db.cursor()
+        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
+
+        if user:
+            print(f"✅ User found: {user[0]}")
+            if bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                print("✅ Password match!")
+                session['user_id'] = user[0]
+                return redirect('/dashboard')
+            else:
+                print("❌ Invalid password!")
+        else:
+            print("❌ User not found!")
+
+    except Exception as e:
+        print(f"❌ Error in login: {e}")
+
+    return render_template('login.html')
 
 
 # Set up logging
