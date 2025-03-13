@@ -37,6 +37,10 @@ print(f"DB Name: {db_name}")
 print(f"DB User: {db_user}")
 print(f"DB Password: {'SET' if db_password else 'MISSING'}")
 
+print("Environment Variables:")
+for key, value in os.environ.items():
+    print(key, "=", value)
+
 app = Flask(__name__)
 
 # Secret key for session management
@@ -45,45 +49,50 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 
 
-connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+# connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 
-# def get_db_connection():
-#     connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 
-#     if not connection_string:
-#         print("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-#         return None  # Return early to avoid errors
+def get_db_connection():
+    connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING', '').strip()
 
-#     print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
+    if not connection_string:
+        raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+
+    # Mask Password for Security
+    masked_connection_string = connection_string.replace(
+        f"Pwd={os.environ.get('DB_PASSWORD', 'your_password')}", "Pwd=******"
+    )
+
+    logging.info(f"🔹 AZURE_SQL_CONNECTIONSTRING: {masked_connection_string}")
+
+    try:
+        logging.info("🔄 Attempting database connection...")
+        conn = pyodbc.connect(connection_string)
+        logging.info("✅ Database connection successful!")
+        return conn
+    except Exception as e:
+        logging.error(f"❌ Database connection error: {e}")
+        return None
     
+# def get_db_connection():
+#     connection_string = (
+#         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
+#         f"SERVER={os.getenv('DB_SERVER')};"
+#         f"DATABASE={os.getenv('DB_NAME')};"
+#         f"UID={os.getenv('DB_USERNAME')};"
+#         f"PWD={os.getenv('DB_PASSWORD')};"
+#         f"Encrypt=yes;"
+#         f"TrustServerCertificate=no;"
+#         f"Connection Timeout=30;"
+#     )
+
 #     try:
-#         print("🔄 Attempting database connection...")
 #         conn = pyodbc.connect(connection_string)
 #         print("✅ Database connection successful!")
 #         return conn
 #     except Exception as e:
 #         print(f"❌ Database connection error: {e}")
 #         return None
-    
-def get_db_connection():
-    connection_string = (
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-        f"SERVER={os.getenv('DB_SERVER')};"
-        f"DATABASE={os.getenv('DB_NAME')};"
-        f"UID={os.getenv('DB_USERNAME')};"
-        f"PWD={os.getenv('DB_PASSWORD')};"
-        f"Encrypt=yes;"
-        f"TrustServerCertificate=no;"
-        f"Connection Timeout=30;"
-    )
-
-    try:
-        conn = pyodbc.connect(connection_string)
-        print("✅ Database connection successful!")
-        return conn
-    except Exception as e:
-        print(f"❌ Database connection error: {e}")
-        return None
 
 
 # Signup Route
@@ -138,9 +147,9 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
-            flash(f"connection_string is 1: {connection_string}", "info")
-            flash("connection_string is 2: {}".format(connection_string))
-            flash("connection_string is 3: " + str(connection_string))
+            # flash(f"connection_string is 1: {connection_string}", "info")
+            # flash("connection_string is 2: {}".format(connection_string))
+            # flash("connection_string is 3: " + str(connection_string))
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
