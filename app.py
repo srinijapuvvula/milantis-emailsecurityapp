@@ -109,6 +109,7 @@ def signup():
     return render_template('signup.html')
 
 
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     print("📌 Login function called")
     email = request.form.get('email_login')
