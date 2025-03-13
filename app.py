@@ -59,6 +59,7 @@ def get_db_connection():
     # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
     connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
 
+
     try:
         conn = pyodbc.connect(connection_string)
         print("✅ Database connection successful!")
