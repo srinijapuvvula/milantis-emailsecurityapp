@@ -27,30 +27,44 @@ app = Flask(__name__)
 
 # Secret key for session management
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
-
-
-# Secure Database Connection Function
+# print(f"🔹 secret key is: {app.secret_key}")
 
 def get_db_connection():
-    driver = "{ODBC Driver 18 for SQL Server}"  # Ensure ODBC 18 is installed
+    server = os.getenv("DB_SERVER")
+    database = os.getenv("DB_NAME")
+    username = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    driver = "{ODBC Driver 18 for SQL Server}"
+
+    # Debugging: Print environment variables to check if they are set
+    print(f"🔹 DB_SERVER: {server}")
+    print(f"🔹 DB_NAME: {database}")
+    print(f"🔹 DB_USER: {username}")
+    print(f"🔹 DB_PASSWORD: {'SET' if password else 'MISSING'}")  # Hide actual password for security
+
+    if not all([server, database, username, password]):
+        print("❌ One or more environment variables are missing!")
+        return None
+
     connection_string = (
         f"DRIVER={driver};"
-        f"SERVER={DB_SERVER};"
-        f"DATABASE={DB_NAME};"
-        f"UID={DB_USER};"
-        f"PWD={DB_PASSWORD};"
+        f"SERVER={server};"
+        f"DATABASE={database};"
+        f"UID={username};"
+        f"PWD={password};"
         f"Encrypt=yes;"
         f"TrustServerCertificate=no;"
-        f"Connection Timeout=90;"
+        f"Connection Timeout=30;"
     )
 
     try:
         conn = pyodbc.connect(connection_string)
+        print("✅ Database connection successful!")
         return conn
     except Exception as e:
-        print(f"{conn}")
-        #print(f"❌ Database connection failed: {e}")
+        print(f"❌ Database connection failed: {e}")
         return None
+
 
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
