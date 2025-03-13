@@ -24,14 +24,30 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Create and start virtual environment
+      - name: Cache dependencies  # ✅ Improved caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            venv/
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Create and start virtual environment  # ✅ Optimized venv handling
         run: |
-          python -m venv venv
+          if [ ! -d "venv" ]; then
+            python -m venv venv
+          fi
           source venv/bin/activate
+
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
-        
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
