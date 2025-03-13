@@ -6,6 +6,7 @@ from io import BytesIO
 import dns.resolver
 import logging
 import os
+from dotenv import load_dotenv
 from lxml import etree
 from datetime import datetime, timezone
 import pytz
@@ -22,6 +23,19 @@ import requests
 import json
 import pyodbc
 
+load_dotenv()
+
+
+# Now you can access them using os.getenv()
+db_server = os.getenv("DB_SERVER")
+db_name = os.getenv("DB_NAME")
+db_user = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+
+print(f"DB Server: {db_server}")
+print(f"DB Name: {db_name}")
+print(f"DB User: {db_user}")
+print(f"DB Password: {'SET' if db_password else 'MISSING'}")
 
 app = Flask(__name__)
 
@@ -29,59 +43,48 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-# requests.Session(app)  # Attach session handling
 
-# print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
-# print(f"DB_NAME: {os.getenv('DB_NAME')}")
-# print(f"DB_USER: {os.getenv('DB_USER')}")
-# print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
 connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 
+# def get_db_connection():
+#     connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+
+#     if not connection_string:
+#         print("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+#         return None  # Return early to avoid errors
+
+#     print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
     
-    # server = os.getenv("DB_SERVER")
-    # database = os.getenv("DB_NAME")
-    # username = os.getenv("DB_USER")
-    # password = os.getenv("DB_PASSWORD")
-    # driver = "{ODBC Driver 18 for SQL Server}"
-
-    # # Debugging: Print environment variables to check if they are set
-    # print(f"🔹 DB_SERVER: {server}")
-    # print(f"🔹 DB_NAME: {database}")
-    # print(f"🔹 DB_USER: {username}")
-    # print(f"🔹 DB_PASSWORD: {'SET' if password else 'MISSING'}")  # Hide actual password for security
-
-    # if not all([server, database, username, password]):
-    #     print("❌ One or more environment variables are missing!")
-    #     return None
-    # DB_NAME= 'milantis-emailsecurity-db'
-    # DB_SERVER='milantis-emailsecurityapp.database.windows.net'
-    # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
+#     try:
+#         print("🔄 Attempting database connection...")
+#         conn = pyodbc.connect(connection_string)
+#         print("✅ Database connection successful!")
+#         return conn
+#     except Exception as e:
+#         print(f"❌ Database connection error: {e}")
+#         return None
+    
 def get_db_connection():
-    connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+    connection_string = (
+        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
+        f"SERVER={os.getenv('DB_SERVER')};"
+        f"DATABASE={os.getenv('DB_NAME')};"
+        f"UID={os.getenv('DB_USERNAME')};"
+        f"PWD={os.getenv('DB_PASSWORD')};"
+        f"Encrypt=yes;"
+        f"TrustServerCertificate=no;"
+        f"Connection Timeout=30;"
+    )
 
-    if not connection_string:
-        print("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-        return None  # Return early to avoid errors
-
-    print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
-    
     try:
-        print("🔄 Attempting database connection...")
         conn = pyodbc.connect(connection_string)
         print("✅ Database connection successful!")
         return conn
     except Exception as e:
         print(f"❌ Database connection error: {e}")
         return None
-    
-    # try:
-    #     conn = pyodbc.connect(connection_string)
-    #     print("✅ Database connection successful!")
-    #     return conn
-    # except Exception as e:
-    #     print(f"❌ Database connection error: {e}")
-    #     return None
+
 
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
