@@ -58,15 +58,27 @@ def get_db_connection():
     # DB_SERVER='milantis-emailsecurityapp.database.windows.net'
     # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
     connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
-
+    print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+    if not connection_string:
+        print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+        return None
 
     try:
+        print("Attempting database connection...")
         conn = pyodbc.connect(connection_string)
-        print("✅ Database connection successful!")
+        print("Database connection successful!")
         return conn
     except Exception as e:
-        print(f"❌ Database connection error: {e}")
+        print(f"Database connection error: {e}")
         return None
+     
+    # try:
+    #     conn = pyodbc.connect(connection_string)
+    #     print("✅ Database connection successful!")
+    #     return conn
+    # except Exception as e:
+    #     print(f"❌ Database connection error: {e}")
+    #     return None
 
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
