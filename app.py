@@ -29,29 +29,35 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-requests.Session(app)  # Attach session handling
+# requests.Session(app)  # Attach session handling
 
-print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
-print(f"DB_NAME: {os.getenv('DB_NAME')}")
-print(f"DB_USER: {os.getenv('DB_USER')}")
-print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
+# print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
+# print(f"DB_NAME: {os.getenv('DB_NAME')}")
+# print(f"DB_USER: {os.getenv('DB_USER')}")
+# print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
 
 def get_db_connection():
     
-    connection_string = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        "SERVER=milantis-emailsecurityapp.database.windows.net;"
-        "DATABASE=milantis-emailsecurity-db;"
-        "UID=milantis-admin;"
-        "PWD=0Izilb14;"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
-    )
-    # conn = pyodbc.connect(connection_string)
-    # print("✅ Database connection successful!")
+    # server = os.getenv("DB_SERVER")
+    # database = os.getenv("DB_NAME")
+    # username = os.getenv("DB_USER")
+    # password = os.getenv("DB_PASSWORD")
+    # driver = "{ODBC Driver 18 for SQL Server}"
 
+    # # Debugging: Print environment variables to check if they are set
+    # print(f"🔹 DB_SERVER: {server}")
+    # print(f"🔹 DB_NAME: {database}")
+    # print(f"🔹 DB_USER: {username}")
+    # print(f"🔹 DB_PASSWORD: {'SET' if password else 'MISSING'}")  # Hide actual password for security
+
+    # if not all([server, database, username, password]):
+    #     print("❌ One or more environment variables are missing!")
+    #     return None
+    # DB_NAME= 'milantis-emailsecurity-db'
+    # DB_SERVER='milantis-emailsecurityapp.database.windows.net'
+    # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
+    connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
 
     try:
         conn = pyodbc.connect(connection_string)
