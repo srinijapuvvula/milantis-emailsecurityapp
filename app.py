@@ -36,7 +36,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 # print(f"DB_USER: {os.getenv('DB_USER')}")
 # print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
-
+connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
 def get_db_connection():
     
     # server = os.getenv("DB_SERVER")
@@ -58,6 +58,7 @@ def get_db_connection():
     # DB_SERVER='milantis-emailsecurityapp.database.windows.net'
     # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
     connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
+    print(connection_string)
     print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
     if not connection_string:
         print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
@@ -132,6 +133,7 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
+            flash("connection_string is: ", connection_string)
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
