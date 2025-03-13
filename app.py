@@ -62,9 +62,8 @@ def get_db_connection():
         print("✅ Database connection successful!")
         return conn
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f"❌ Database connection error: {e}")
         return None
-
 
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -102,48 +101,6 @@ def signup():
             return render_template('signup.html')
 
     return render_template('signup.html')
-
-
-# Login Route
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email_login')
-        password = request.form.get('password_login')
-
-        db = get_db_connection()
-        if db is None:
-           
-            #flash("❌ Database connection failed!", "danger")
-            return redirect('/login')
-
-        try:
-            cursor = db.cursor()
-
-            # Fetch user data from Azure SQL
-            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-            cursor.close()
-            db.close()
-
-            if user:  # Ensure user exists before unpacking tuple
-                user_id, stored_password = user  # Extract tuple values
-                
-                if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
-                    session['user_id'] = user_id
-                    flash("✅ Logged in successfully!", "success")
-                    return redirect('/dashboard')
-                else:
-                    flash("❌ Invalid email or password.", "danger")
-            else:
-                flash("❌ Invalid email or password.", "danger")
-
-        except Exception as e:
-            flash(f"❌ Database error: {str(e)}", "danger")
-
-    return render_template('login.html')
-
-
 
 
 
