@@ -36,8 +36,8 @@ app.config["SESSION_TYPE"] = "filesystem"
 # print(f"DB_USER: {os.getenv('DB_USER')}")
 # print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
-connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
-def get_db_connection():
+connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+
     
     # server = os.getenv("DB_SERVER")
     # database = os.getenv("DB_NAME")
@@ -57,22 +57,24 @@ def get_db_connection():
     # DB_NAME= 'milantis-emailsecurity-db'
     # DB_SERVER='milantis-emailsecurityapp.database.windows.net'
     # connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={DB_SERVER};Database={DB_NAME};Uid=milantis-admin;Pwd=0Izilb14;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
-    connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
-    print(connection_string)
-    print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-    if not connection_string:
-        print("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-        return None
+def get_db_connection():
+    connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 
+    if not connection_string:
+        print("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+        return None  # Return early to avoid errors
+
+    print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
+    
     try:
-        print("Attempting database connection...")
+        print("🔄 Attempting database connection...")
         conn = pyodbc.connect(connection_string)
-        print("Database connection successful!")
+        print("✅ Database connection successful!")
         return conn
     except Exception as e:
-        print(f"Database connection error: {e}")
+        print(f"❌ Database connection error: {e}")
         return None
-     
+    
     # try:
     #     conn = pyodbc.connect(connection_string)
     #     print("✅ Database connection successful!")
@@ -133,7 +135,7 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
-            flash("connection_string is: {connection_string}")
+            flash(f"connection_string is: {connection_string}", "info")
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
