@@ -133,7 +133,7 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
-            flash("connection_string is: ", connection_string)
+            flash("connection_string is: {connection_string}")
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
