@@ -28,6 +28,7 @@ app = Flask(__name__)
 # Secret key for session management
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 # print(f"🔹 secret key is: {app.secret_key}")
+app.config["SESSION_TYPE"] = "filesystem"
 
 print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
 print(f"DB_NAME: {os.getenv('DB_NAME')}")
@@ -58,8 +59,8 @@ def get_db_connection():
         f"DATABASE={database};"
         f"UID={username};"
         f"PWD={password};"
-        f"Encrypt=yes;"
-        f"TrustServerCertificate=no;"
+        # f"Encrypt=yes;"
+        # f"TrustServerCertificate=no;"
         f"Connection Timeout=30;"
     )
 
@@ -108,41 +109,50 @@ def signup():
 
     return render_template('signup.html')
 
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     print("📌 Login function called")
-    email = request.form.get('email_login')
-    password = request.form.get('password_login')
+    
+    if 'user_id' in session:
+        print("✅ User already logged in, redirecting to /dashboard")
+        return redirect('/dashboard')  # Avoid redirect loop
 
-    db = get_db_connection()
-    if db is None:
-        print("❌ Database connection failed in login()")
-        flash("Database connection failed!", "danger")
-        return redirect('/login')
+    if request.method == "POST":
+        email = request.form.get('email_login')
+        password = request.form.get('password_login')
 
-    try:
-        cursor = db.cursor()
-        cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
+        db = get_db_connection()
+        if db is None:
+            print("❌ Database connection failed")
+            flash("Database connection failed!", "danger")
+            return redirect('/login')
 
-        if user:
-            print(f"✅ User found: {user[0]}")
-            if bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
-                print("✅ Password match!")
-                session['user_id'] = user[0]
-                return redirect('/dashboard')
+        try:
+            cursor = db.cursor()
+            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            db.close()
+
+            if user:
+                print(f"✅ User found: {user[0]}")
+                if bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                    print("✅ Password match, setting session and redirecting")
+                    session['user_id'] = user[0]
+                    return redirect('/dashboard')
+                else:
+                    print("❌ Invalid password")
+                    flash("Invalid password!", "danger")
             else:
-                print("❌ Invalid password!")
-        else:
-            print("❌ User not found!")
+                print("❌ User not found")
+                flash("User not found!", "danger")
 
-    except Exception as e:
-        print(f"❌ Error in login: {e}")
+        except Exception as e:
+            print(f"❌ Error in login: {e}")
+            flash("An error occurred!", "danger")
 
-    return render_template('login.html')
+    print("🔄 Rendering login page")
+    return render_template('login.html')  # Make sure this template exists!
 
 
 # Set up logging
