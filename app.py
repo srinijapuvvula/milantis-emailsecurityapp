@@ -38,7 +38,21 @@ print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
 
 def get_db_connection():
-    connection_string = "DSN=MilantisSQLServer;"
+    
+    connection_string = (
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        "SERVER=milantis-emailsecurityapp.database.windows.net;"
+        "DATABASE=milantis-emailsecurity-db;"
+        "UID=milantis-admin;"
+        "PWD=0Izilb14;"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        "Connection Timeout=30;"
+    )
+    # conn = pyodbc.connect(connection_string)
+    # print("✅ Database connection successful!")
+
+
     try:
         conn = pyodbc.connect(connection_string)
         print("✅ Database connection successful!")
