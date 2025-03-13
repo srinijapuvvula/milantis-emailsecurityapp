@@ -27,43 +27,18 @@ app = Flask(__name__)
 
 # Secret key for session management
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
-# print(f"🔹 secret key is: {app.secret_key}")
+app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+requests.Session(app)  # Attach session handling
 
 print(f"DB_SERVER: {os.getenv('DB_SERVER')}")
 print(f"DB_NAME: {os.getenv('DB_NAME')}")
 print(f"DB_USER: {os.getenv('DB_USER')}")
-print(f"DB_PASSWORD: {'SET' if os.getenv('DB_PASSWORD') else 'MISSING'}")
+print(f"DB_PASSWORD: {os.getenv('DB_PASSWORD')}")
 
 
 def get_db_connection():
-    server = os.getenv("DB_SERVER")
-    database = os.getenv("DB_NAME")
-    username = os.getenv("DB_USER")
-    password = os.getenv("DB_PASSWORD")
-    driver = "{ODBC Driver 18 for SQL Server}"
-
-    # Debugging: Print environment variables to check if they are set
-    print(f"🔹 DB_SERVER: {server}")
-    print(f"🔹 DB_NAME: {database}")
-    print(f"🔹 DB_USER: {username}")
-    print(f"🔹 DB_PASSWORD: {'SET' if password else 'MISSING'}")  # Hide actual password for security
-
-    if not all([server, database, username, password]):
-        print("❌ One or more environment variables are missing!")
-        return None
-
-    connection_string = (
-        f"DRIVER={driver};"
-        f"SERVER={server};"
-        f"DATABASE={database};"
-        f"UID={username};"
-        f"PWD={password};"
-        # f"Encrypt=yes;"
-        # f"TrustServerCertificate=no;"
-        f"Connection Timeout=30;"
-    )
-
+    connection_string = "DSN=MilantisSQLServer;"
     try:
         conn = pyodbc.connect(connection_string)
         print("✅ Database connection successful!")
