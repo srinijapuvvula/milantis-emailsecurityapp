@@ -6,7 +6,6 @@ from io import BytesIO
 import dns.resolver
 import logging
 import os
-from dotenv import load_dotenv
 from lxml import etree
 from datetime import datetime, timezone
 import pytz
@@ -22,18 +21,21 @@ import bcrypt
 import requests
 import json
 import pyodbc
+from dotenv import load_dotenv
 
+
+# Load environment variables from .env file (only required if running locally)
 load_dotenv()
 
-print("🔍 Checking environment variables:")
-for key, value in os.environ.items():
-    if "SQL" in key or "DB" in key:  # Filter for SQL-related variables
-        print(f"{key} = {value}")
+# Retrieve connection string once
+connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
 
-# Print the connection string explicitly
-print("🔹 AZURE_SQL_CONNECTIONSTRING:", os.getenv("AZURE_SQL_CONNECTIONSTRING"))
+if not connection_string:
+    raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
 
-    
+print("🔹 Environment Connection String:", connection_string)
+
+# Flask App Initialization
 app = Flask(__name__)
 
 # Secret key for session management
@@ -43,13 +45,16 @@ app.config["SESSION_TYPE"] = "filesystem"
 
 
 def get_db_connection():
-    # Read the connection string from Azure environment variables
-    connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
+    """Establish connection to Azure SQL Database using environment variable"""
+    global connection_string  # Use the already loaded connection string
 
-    if not connection_string:
-        raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+    print("🔹 Using Connection String:", connection_string)
 
-    print(f"🔹 Using Connection String: {connection_string}")
+    # Modify connection string to fix SSL issues if necessary
+    connection_string = (
+        connection_string.replace("Encrypt=yes", "Encrypt=no")
+        .replace("TrustServerCertificate=no", "TrustServerCertificate=yes")
+    )
 
     try:
         print("🔄 Attempting database connection...")
