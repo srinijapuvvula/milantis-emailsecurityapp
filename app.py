@@ -28,12 +28,16 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo, Regexp
 from werkzeug.security import check_password_hash
 
-# Retrieve connection string
-AZURE_SQL_CONNECTIONSTRING = os.getenv("AZURE_SQL_CONNECTIONSTRING")
-if not AZURE_SQL_CONNECTIONSTRING:
+# Load environment variables from .env file (only required if running locally)
+load_dotenv()
+
+# Retrieve connection string once
+connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
+
+if not connection_string:
     raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
 
-print("🔹 Using Connection String:", AZURE_SQL_CONNECTIONSTRING)
+print("🔹 Environment Connection String:", connection_string)
 
 # Flask App Initialization
 app = Flask(__name__)
@@ -41,7 +45,9 @@ app = Flask(__name__)
 # Secret key for session management
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"  # Change to 'redis' if using Redis for sessions
+app.config["SESSION_TYPE"] = "filesystem"
+
+
 Session(app)
 
 # Ensure the session directory is writable
