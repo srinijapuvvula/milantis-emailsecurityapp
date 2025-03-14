@@ -110,7 +110,10 @@
                         <input type="email" id="email_signup" name="email_signup" required>
                     
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" 
+                                required 
+                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}" 
+                                title="Password must be at least 8 characters long, contain one uppercase letter, one number, and one special character">
 
                         <div class="consent">
                             By continuing, you agree to the <strong>application's</strong> 

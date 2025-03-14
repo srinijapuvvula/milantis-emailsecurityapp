@@ -1,2 +1,3 @@
-<h1>Welcome, {{ email }}</h1>
-<a href="{{ url_for('logout') }}">Logout</a>
+<form action="{{ url_for('logout') }}" method="get">
+    <button type="submit">Logout</button>
+</form>
