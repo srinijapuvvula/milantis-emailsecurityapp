@@ -110,19 +110,16 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST">
-            <!-- CSRF Token (if using Flask-WTF) -->
-            {{ csrf_token() if csrf_token }}
-
-            <!-- Login Form Fields -->
-            <label for="email_login">Email</label>
+        <form method="POST" action="/login">
+            <label for="email_login">Email:</label>
             <input type="email" id="email_login" name="email_login" required>
         
-            <label for="password_login">Password</label>
+            <label for="password_login">Password:</label>
             <input type="password" id="password_login" name="password_login" required>
         
             <button type="submit">Login</button>
         </form>
+        
 
         <div class="small-text">
             Don't have an account? 

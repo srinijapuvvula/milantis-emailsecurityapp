@@ -111,51 +111,32 @@ def signup():
             return render_template('signup.html')
 
     return render_template('signup.html')
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    
-    # if 'user_id' in session:
-    #     print("✅ User already logged in, redirecting to /dashboard")
-    #     return redirect('/dashboard')  # Avoid redirect loop
-
     if request.method == "POST":
-        email = request.form.get('email_lo  gin')
-        password = request.form.get('password_login')
+        email = request.form.get("email_login")  # Updated key
+        password = request.form.get("password_login")  # Updated key
+
+        if not email or not password:
+            flash("❌ Email and password are required!", "danger")
+            return render_template("login.html")
 
         db = get_db_connection()
-        if db is None:
-            print("❌ Database connection failed")
-            # flash(f"connection_string: {connection_string}", "info")
-            flash("Database connection failed!", "danger")
-            return redirect('/login')
+        cursor = db.cursor()
+        cursor.execute("SELECT id, password FROM users WHERE email=?", (email,))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
 
-        try:
-            cursor = db.cursor()
-            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
-            cursor.close()
-            db.close()
+        if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+            session["user_id"] = user[0]
+            session["email"] = email
+            flash("✅ Login successful!", "success")
+            return redirect("/dashboard")
 
-            if user:
-                print(f"✅ User found: {user[0]}")
-                if bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
-                    print("✅ Password match, setting session and redirecting")
-                    session['user_id'] = user[0]
-                    return redirect('/dashboard')
-                else:
-                    print("nvalid password")
-                    flash("Invalid password!", "danger")
-            else:
-                print("User not found")
-                flash("User not found!", "danger")
+        flash("❌ Invalid email or password", "danger")
 
-        except Exception as e:
-            print(f"Error in login: {e}")
-            flash("An error occurred!", "danger")
-
-    print("🔄 Rendering login page")
-    return render_template('login.html')  # Make sure this template exists!
+    return render_template("login.html")
 
 
 # Set up logging
@@ -311,6 +292,7 @@ def fetch_blobs_with_date_ranges(domain_filter=None):
                         "end_time_est": end_time_est
                     })
     return blobs_with_dates
+
 
 @app.route('/aggregate_reports')
 def aggregate_reports():
