@@ -23,29 +23,16 @@ import requests
 import json
 import pyodbc
 
-# Load environment variables from .env file
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-if os.path.exists(dotenv_path):
-    print(f"Loading environment variables from {dotenv_path}")
-    load_dotenv(dotenv_path)
-else:
-    print(".env file not found!")
+load_dotenv()
 
+print("🔍 Checking environment variables:")
+for key, value in os.environ.items():
+    if "SQL" in key or "DB" in key:  # Filter for SQL-related variables
+        print(f"{key} = {value}")
 
-# Now you can access them using os.getenv()
-# db_server = os.getenv("DB_SERVER")
-# db_name = os.getenv("DB_NAME")
-# db_user = os.getenv("DB_USERNAME")
-# db_password = os.getenv("DB_PASSWORD")
+# Print the connection string explicitly
+print("🔹 AZURE_SQL_CONNECTIONSTRING:", os.getenv("AZURE_SQL_CONNECTIONSTRING"))
 
-# print(f"DB Server: {db_server}")
-# print(f"DB Name: {db_name}")
-# print(f"DB User: {db_user}")
-# print(f"DB Password: {'SET' if db_password else 'MISSING'}")
-
-# print("Environment Variables:")
-# for key, value in os.environ.items():
-#     print(key, "=", value)
     
 app = Flask(__name__)
 
@@ -55,40 +42,23 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 
 
-connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
-# connection_string2 = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-# def get_db_connection():
-#     print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-#     connection_string = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-#     print(connection_string)
-
-#     if not connection_string:
-#         raise ValueError("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-
-
-#     print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
-    
-#     try:
-#         print("🔄 Attempting database connection...")
-#         conn = pyodbc.connect(connection_string)
-#         print("✅ Database connection successful!")
-#         return conn
-#     except Exception as e:
-#         print(f"❌ Database connection error: {e}")
-#         return None
 def get_db_connection():
+    # Read the connection string from Azure environment variables
     connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
+
+    if not connection_string:
+        raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+
+    print(f"🔹 Using Connection String: {connection_string}")
+
     try:
-        print("Attempting database connection...")
+        print("🔄 Attempting database connection...")
         conn = pyodbc.connect(connection_string)
-        print("Database connection successful!")
+        print("✅ Database connection successful!")
         return conn
     except Exception as e:
-        print("Database connection error!")
-        print(f"Error Details: {e}")  # Print full error details
+        print(f"❌ Database connection error: {e}")
         return None
-
-
 
 
 # Signup Route
@@ -131,7 +101,7 @@ def signup():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     print("📌 Login function called")
-    print(connection_string)
+    # print(connection_string)
 
     
     if 'user_id' in session:
@@ -145,7 +115,7 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
-            flash(f"connection_string: {connection_string}", "info")
+            # flash(f"connection_string: {connection_string}", "info")
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
