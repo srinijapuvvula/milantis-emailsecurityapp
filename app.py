@@ -27,19 +27,19 @@ load_dotenv()
 
 
 # Now you can access them using os.getenv()
-db_server = os.getenv("DB_SERVER")
-db_name = os.getenv("DB_NAME")
-db_user = os.getenv("DB_USERNAME")
-db_password = os.getenv("DB_PASSWORD")
+# db_server = os.getenv("DB_SERVER")
+# db_name = os.getenv("DB_NAME")
+# db_user = os.getenv("DB_USERNAME")
+# db_password = os.getenv("DB_PASSWORD")
 
-print(f"DB Server: {db_server}")
-print(f"DB Name: {db_name}")
-print(f"DB User: {db_user}")
-print(f"DB Password: {'SET' if db_password else 'MISSING'}")
+# print(f"DB Server: {db_server}")
+# print(f"DB Name: {db_name}")
+# print(f"DB User: {db_user}")
+# print(f"DB Password: {'SET' if db_password else 'MISSING'}")
 
-print("Environment Variables:")
-for key, value in os.environ.items():
-    print(key, "=", value)
+# print("Environment Variables:")
+# for key, value in os.environ.items():
+#     print(key, "=", value)
     
 app = Flask(__name__)
 
@@ -50,46 +50,39 @@ app.config["SESSION_TYPE"] = "filesystem"
 
 
 connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
-connection_string2 = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-def get_db_connection():
-    print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-    connection_string = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
-    print(connection_string)
-
-    if not connection_string:
-        raise ValueError("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-
-
-    print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
-    
-    try:
-        print("🔄 Attempting database connection...")
-        conn = pyodbc.connect(connection_string)
-        print("✅ Database connection successful!")
-        return conn
-    except Exception as e:
-        print(f"❌ Database connection error: {e}")
-        return None
-    
+# connection_string2 = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
 # def get_db_connection():
-#     connection_string = (
-#         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-#         f"SERVER={os.getenv('DB_SERVER')};"
-#         f"DATABASE={os.getenv('DB_NAME')};"
-#         f"UID={os.getenv('DB_USERNAME')};"
-#         f"PWD={os.getenv('DB_PASSWORD')};"
-#         f"Encrypt=yes;"
-#         f"TrustServerCertificate=no;"
-#         f"Connection Timeout=30;"
-#     )
+#     print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
+#     connection_string = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
+#     print(connection_string)
 
+#     if not connection_string:
+#         raise ValueError("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
+
+
+#     print(f"🔹 AZURE_SQL_CONNECTIONSTRING: {connection_string}")
+    
 #     try:
+#         print("🔄 Attempting database connection...")
 #         conn = pyodbc.connect(connection_string)
 #         print("✅ Database connection successful!")
 #         return conn
 #     except Exception as e:
 #         print(f"❌ Database connection error: {e}")
 #         return None
+def get_db_connection():
+    connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
+    try:
+        print("Attempting database connection...")
+        conn = pyodbc.connect(connection_string)
+        print("Database connection successful!")
+        return conn
+    except Exception as e:
+        print("Database connection error!")
+        print(f"Error Details: {e}")  # Print full error details
+        return None
+
+
 
 
 # Signup Route
@@ -133,6 +126,7 @@ def signup():
 def login():
     print("📌 Login function called")
     print(connection_string)
+
     
     if 'user_id' in session:
         print("✅ User already logged in, redirecting to /dashboard")
@@ -145,9 +139,7 @@ def login():
         db = get_db_connection()
         if db is None:
             print("❌ Database connection failed")
-            flash(f"connection_string is 1: {connection_string}", "info")
-            flash("connection_string is 2: {}".format(connection_string2))
-            # flash("connection_string is 3: " + str(connection_string))
+            flash(f"connection_string: {connection_string}", "info")
             flash("Database connection failed!", "danger")
             return redirect('/login')
 
