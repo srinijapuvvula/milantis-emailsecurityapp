@@ -52,7 +52,9 @@ app.config["SESSION_TYPE"] = "filesystem"
 connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 connection_string2 = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
 def get_db_connection():
+    print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
     connection_string = print(os.environ.get('AZURE_SQL_CONNECTIONSTRING'))
+    print(connection_string)
 
     if not connection_string:
         raise ValueError("AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
