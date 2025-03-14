@@ -132,6 +132,7 @@ def signup():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     print("📌 Login function called")
+    print(connection_string)
     
     if 'user_id' in session:
         print("✅ User already logged in, redirecting to /dashboard")
