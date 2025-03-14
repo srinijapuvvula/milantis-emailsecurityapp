@@ -1,6 +1,5 @@
 import shutil
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
-from flask_session import Session
 from dns import resolver
 from io import BytesIO
 # import pdfkit
@@ -10,7 +9,7 @@ import os
 from lxml import etree
 from datetime import datetime, timezone
 import pytz
-import re   
+import re
 import gzip
 import zipfile
 from io import BytesIO
@@ -23,10 +22,7 @@ import requests
 import json
 import pyodbc
 from dotenv import load_dotenv
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo, Regexp
-from werkzeug.security import check_password_hash
+
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv()
@@ -48,13 +44,6 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 
 
-Session(app)
-
-# Ensure the session directory is writable
-SESSION_DIR = "/tmp/flask_session"
-os.makedirs(SESSION_DIR, exist_ok=True)
-app.config["SESSION_FILE_DIR"] = SESSION_DIR
-
 def get_db_connection():
     """Establish connection to Azure SQL Database using environment variable"""
     global connection_string  # Use the already loaded connection string
@@ -68,12 +57,12 @@ def get_db_connection():
     )
 
     try:
-        print("Attempting database connection...")
+        print("🔄 Attempting database connection...")
         conn = pyodbc.connect(connection_string)
-        print("Database connection successful!")
+        print("✅ Database connection successful!")
         return conn
     except Exception as e:
-        print(f"Database connection error: {e}")
+        print(f"❌ Database connection error: {e}")
         return None
 
 def is_password_secure(password):
@@ -81,6 +70,7 @@ def is_password_secure(password):
     pattern = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
     return bool(re.match(pattern, password))
 
+# Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -89,17 +79,18 @@ def signup():
         email = request.form.get('email_signup')
         password = request.form.get('password')
 
-        # ✅ Check password security
+        # Check password security
         if not is_password_secure(password):
             flash("❌ Password must contain at least 8 characters, 1 uppercase, 1 number, and 1 special character.", "danger")
             return render_template('signup.html')
-
-        # ✅ Hash the password securely
+        
+        # Hash the password securely
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         db = get_db_connection()
         if db is None:
-            flash("❌ Database connection failed!", "danger")
+           
+           # flash("❌ Database connection failed!", "danger")
             return redirect('/signup')
 
         try:
@@ -115,7 +106,7 @@ def signup():
             flash("✅ Account created successfully!", "success")
             return redirect('/login')
 
-        except Exception as e:
+        except Exception as e:  # Catch all exceptions
             flash(f"❌ Database error: {str(e)}", "danger")
             return render_template('signup.html')
 
@@ -123,35 +114,48 @@ def signup():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    
+    # if 'user_id' in session:
+    #     print("✅ User already logged in, redirecting to /dashboard")
+    #     return redirect('/dashboard')  # Avoid redirect loop
+
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        email = request.form.get('email_lo  gin')
+        password = request.form.get('password_login')
 
         db = get_db_connection()
-        cursor = db.cursor()
-        cursor.execute("SELECT id, password FROM users WHERE email=?", (email,))
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
+        if db is None:
+            print("❌ Database connection failed")
+            # flash(f"connection_string: {connection_string}", "info")
+            flash("Database connection failed!", "danger")
+            return redirect('/login')
 
-        # ✅ Fix bcrypt.checkpw() issue (convert user[1] to bytes)
-        if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
-            session["user_id"] = user[0]
-            session["email"] = email
-            flash("✅ Login successful!", "success")
-            return redirect("/dashboard")
+        try:
+            cursor = db.cursor()
+            cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            db.close()
 
-        flash("❌ Invalid email or password", "danger")
+            if user:
+                print(f"✅ User found: {user[0]}")
+                if bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                    print("✅ Password match, setting session and redirecting")
+                    session['user_id'] = user[0]
+                    return redirect('/dashboard')
+                else:
+                    print("nvalid password")
+                    flash("Invalid password!", "danger")
+            else:
+                print("User not found")
+                flash("User not found!", "danger")
 
-    return render_template("login.html")
+        except Exception as e:
+            print(f"Error in login: {e}")
+            flash("An error occurred!", "danger")
 
-# Route for logout
-@app.route("/logout")
-def logout():
-    """Clear session and log out the user."""
-    session.clear()
-    flash("✅ You have been logged out!", "success")
-    return redirect("/login")
+    print("🔄 Rendering login page")
+    return render_template('login.html')  # Make sure this template exists!
 
 
 # Set up logging
@@ -384,6 +388,13 @@ def dashboard():
 def default():
     return redirect(url_for('signup'))
 
+# Route for logout
+@app.route("/logout")
+def logout():
+    """Clear session and log out the user."""
+    session.clear()
+    flash("✅ You have been logged out!", "success")
+    return redirect("/login")
 
 
 @app.route('/db-check')
