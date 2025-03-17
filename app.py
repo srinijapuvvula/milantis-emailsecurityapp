@@ -22,6 +22,7 @@ import requests
 import json
 import pyodbc
 from dotenv import load_dotenv
+from weasyprint import HTML
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
@@ -691,7 +692,6 @@ def txt_lookup(domain):
 def generate_pdf():
     try:
         # Get data from the form
-        
         domain = request.form.get('domain', 'unknown')
         mx_results = mx_lookup(domain)
         dmarc_results = dmarc_lookup(domain)
@@ -702,8 +702,6 @@ def generate_pdf():
         txt_results = txt_lookup(domain)
         hosting_provider = dns_hosting_provider(domain)
         dns_provider = get_dns_hosting_provider(domain)
-
-
 
         domain = request.form.get('domain', '').strip()
         blocklist_status = []  # Initialize as an empty list
@@ -731,8 +729,6 @@ def generate_pdf():
         except Exception as e:
             flash(f"An error occurred while resolving IP addresses for '{domain}': {e}", "danger")
 
-
-
         # Get location for the first IP in DNS results
         ip_location = {}
         if dns_results and isinstance(dns_results, list):
@@ -747,20 +743,6 @@ def generate_pdf():
             .result-item { margin: 10px 0; }
         '''
 
-        # Create options for wkhtmltopdf
-        options = {
-            'page-size': 'A4',
-            'margin-top': '0.75in',
-            'margin-right': '0.75in',
-            'margin-bottom': '0.75in',
-            'margin-left': '0.75in',
-            'encoding': "UTF-8",
-            'custom-header': [
-                ('Accept-Encoding', 'gzip')
-            ],
-            'no-outline': None,
-            'enable-local-file-access': None
-        }
         # Render the HTML template with the data
         html = render_template(
             'PDF_Generation.html',
@@ -777,13 +759,12 @@ def generate_pdf():
             blocklist_status=blocklist_status, 
             ip_location=ip_location,
             current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            email_security=True,
-            options=options
+            email_security=True
         )
         
         print("html code generated")
-        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"wkhtmltox-0.12.6-0.20200605.30.rc.faa06fa.msvc2015-win32.exe")
-        pdf = pdfkit.from_string(html, False, options=options, configuration=pdfkit_config)
+        # Generate PDF using WeasyPrint
+        pdf = HTML(string=html).write_pdf(stylesheets=[css])
         print("html to pdf")
         # Create the response
         response = make_response(pdf)
