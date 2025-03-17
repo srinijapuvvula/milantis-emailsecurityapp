@@ -782,7 +782,7 @@ def generate_pdf():
         )
         
         print("html code generated")
-        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"wkhtmltox-0.12.6-0.20200605.30.rc.faa06fa.msvc2015-win32.exe")
         pdf = pdfkit.from_string(html, False, options=options, configuration=pdfkit_config)
         print("html to pdf")
         # Create the response
