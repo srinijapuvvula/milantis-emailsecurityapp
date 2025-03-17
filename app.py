@@ -23,17 +23,9 @@ import json
 import pyodbc
 from dotenv import load_dotenv
 
-
 # Load environment variables from .env file (only required if running locally)
-load_dotenv()
+load_dotenv(override=True)
 
-# Retrieve connection string once
-connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING")
-
-if not connection_string:
-    raise ValueError("❌ AZURE_SQL_CONNECTIONSTRING environment variable is missing!")
-
-print("🔹 Environment Connection String:", connection_string)
 
 # Flask App Initialization
 app = Flask(__name__)
@@ -43,26 +35,30 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 
+print("\nENV VARIABLES AFTER FORCED .env LOADING:")
+print("AZURE_SQL_CONNECTIONSTRING =", os.getenv("AZURE_SQL_CONNECTIONSTRING"))
 
 def get_db_connection():
     """Establish connection to Azure SQL Database using environment variable"""
-    global connection_string  # Use the already loaded connection string
+    # Retrieve the connection string and strip quotes
+    connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING", "").replace('"{', '{').replace('}"', '}')
+    print("\nFinal Connection String:", connection_string)
+    if not connection_string:
+        print("Error: AZURE_SQL_CONNECTIONSTRING environment variable not set.")
+        return None
 
-    print("🔹 Using Connection String:", connection_string)
+    print("Using Connection String:", connection_string)
 
-    # Modify connection string to fix SSL issues if necessary
-    connection_string = (
-        connection_string.replace("Encrypt=yes", "Encrypt=no")
-        .replace("TrustServerCertificate=no", "TrustServerCertificate=yes")
-    )
+    # Modify connection string if needed (keeping Encrypt=yes for security)
+    connection_string = connection_string.replace("TrustServerCertificate=no", "TrustServerCertificate=yes")
 
     try:
-        print("🔄 Attempting database connection...")
+        print("Attempting database connection...")
         conn = pyodbc.connect(connection_string)
-        print("✅ Database connection successful!")
+        print("Database connection successful!")
         return conn
     except Exception as e:
-        print(f"❌ Database connection error: {e}")
+        print(f"Database connection error: {e}")
         return None
 
 def is_password_secure(password):
@@ -81,7 +77,7 @@ def signup():
 
         # Check password security
         if not is_password_secure(password):
-            flash("❌ Password must contain at least 8 characters, 1 uppercase, 1 number, and 1 special character.", "danger")
+            flash("Password must contain at least 8 characters, 1 uppercase, 1 number, and 1 special character.", "danger")
             return render_template('signup.html')
         
         # Hash the password securely
@@ -90,7 +86,7 @@ def signup():
         db = get_db_connection()
         if db is None:
            
-           # flash("❌ Database connection failed!", "danger")
+           # flash("Database connection failed!", "danger")
             return redirect('/signup')
 
         try:
@@ -103,11 +99,11 @@ def signup():
             cursor.close()
             db.close()
 
-            flash("✅ Account created successfully!", "success")
+            flash("Account created successfully!", "success")
             return redirect('/login')
 
         except Exception as e:  # Catch all exceptions
-            flash(f"❌ Database error: {str(e)}", "danger")
+            flash(f"Database error: {str(e)}", "danger")
             return render_template('signup.html')
 
     return render_template('signup.html')
@@ -118,7 +114,7 @@ def login():
         password = request.form.get("password_login")  # Updated key
 
         if not email or not password:
-            flash("❌ Email and password are required!", "danger")
+            flash("Email and password are required!", "danger")
             return render_template("login.html")
 
         db = get_db_connection()
@@ -131,10 +127,10 @@ def login():
         if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
             session["user_id"] = user[0]
             session["email"] = email
-            flash("✅ Login successful!", "success")
+            flash("Login successful!", "success")
             return redirect("/dashboard")
 
-        flash("❌ Invalid email or password", "danger")
+        flash("Invalid email or password", "danger")
 
     return render_template("login.html")
 
