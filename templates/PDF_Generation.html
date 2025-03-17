@@ -373,15 +373,7 @@
         {% else %}
             <p class="error">No data available.</p>
         {% endif %}
-        <div class="text-center mt-4">
-            <form action="/generate-pdf" method="POST">
-                <!-- Hidden inputs to pass the data -->
-                <input type="hidden" name="domain" value="{{ domain }}">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-file-pdf"></i> Export as PDF
-                </button>
-            </form>
-        </div>
+     
                 
     </div>
 </body>
