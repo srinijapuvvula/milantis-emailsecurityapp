@@ -1,2 +1,7 @@
 #!/bin/bash
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+# Install system dependencies
+apt-get update
+apt-get install -y wkhtmltopdf
+
+# Start the application
+gunicorn --bind=0.0.0.0 --timeout 600 app:app

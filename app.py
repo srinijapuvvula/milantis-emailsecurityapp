@@ -734,15 +734,6 @@ def generate_pdf():
         if dns_results and isinstance(dns_results, list):
             ip_location = get_ip_location(dns_results[0].strip())
 
-        # Create a custom CSS for PDF styling
-        css = '''
-            body { font-family: Arial, sans-serif; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .section { margin: 20px 0; }
-            .section-title { background-color: #f5f5f5; padding: 10px; }
-            .result-item { margin: 10px 0; }
-        '''
-
         # Render the HTML template with the data
         html = render_template(
             'PDF_Generation.html',
@@ -762,10 +753,9 @@ def generate_pdf():
             email_security=True
         )
         
-        print("html code generated")
-        # Generate PDF using WeasyPrint
-        pdf = HTML(string=html).write_pdf(stylesheets=[css])
-        print("html to pdf")
+        # Generate PDF using pdfkit
+        pdf = pdfkit.from_string(html, False)
+        
         # Create the response
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
