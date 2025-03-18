@@ -753,7 +753,7 @@ def generate_pdf():
             email_security=True
         )
         
-        # Generate PDF using pdfkit
+        # Generate PDF using pdfkit removed weasyprint
         pdf = pdfkit.from_string(html, False)
         
         # Create the response
