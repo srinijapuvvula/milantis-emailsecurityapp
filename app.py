@@ -765,6 +765,7 @@ def generate_pdf():
             email_security=True
         )
         # Generate PDF using pdfkit removed weasyprint
+        
         print("1")
         pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"usr\bin\wkhtmltopdf.exe")   
         print("2")
