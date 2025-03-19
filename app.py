@@ -23,6 +23,7 @@ import json
 import pyodbc
 from dotenv import load_dotenv
 import platform
+from weasyprint import HTML
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
@@ -750,19 +751,6 @@ def generate_pdf():
         if dns_results and isinstance(dns_results, list):
             ip_location = get_ip_location(dns_results[0].strip())
     
-        options = {
-            'page-size': 'A4',
-            'margin-top': '0.75in',
-            'margin-right': '0.75in',
-            'margin-bottom': '0.75in',
-            'margin-left': '0.75in',
-            'encoding': "UTF-8",
-            'custom-header': [
-                ('Accept-Encoding', 'gzip')
-            ],
-            'no-outline': None,
-            'enable-local-file-access': None
-        }
         # Render the HTML template with the data
         html = render_template(
             'PDF_Generation.html',
@@ -782,20 +770,9 @@ def generate_pdf():
             email_security=True
         )
         
-        print("1")
-        # Get the appropriate wkhtmltopdf path for the current platform
-        wkhtmltopdf_path = get_wkhtmltopdf_path()
-        print(f"Using wkhtmltopdf path: {wkhtmltopdf_path}")
-        
-        # Create configuration with path if available
-        if wkhtmltopdf_path:
-            pdfkit_config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-            pdf = pdfkit.from_string(html, False, options=options, configuration=pdfkit_config)
-        else:
-            # Try to use pdfkit without explicit path (relies on PATH environment variable)
-            pdf = pdfkit.from_string(html, False, options=options)
-            
-        print("3")
+        # Generate PDF using WeasyPrint
+        pdf = HTML(string=html).write_pdf()
+
         # Create the response
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
