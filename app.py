@@ -22,7 +22,6 @@ import requests
 import json
 import pyodbc
 from dotenv import load_dotenv
-from weasyprint import HTML
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
@@ -686,7 +685,6 @@ def txt_lookup(domain):
         txt_results = None
     return txt_results
 
-
 #PDF generation
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
@@ -733,7 +731,20 @@ def generate_pdf():
         ip_location = {}
         if dns_results and isinstance(dns_results, list):
             ip_location = get_ip_location(dns_results[0].strip())
-
+    
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+            'custom-header': [
+                ('Accept-Encoding', 'gzip')
+            ],
+            'no-outline': None,
+            'enable-local-file-access': None
+        }
         # Render the HTML template with the data
         html = render_template(
             'PDF_Generation.html',
@@ -752,10 +763,12 @@ def generate_pdf():
             current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             email_security=True
         )
-        
         # Generate PDF using pdfkit removed weasyprint
-        pdf = pdfkit.from_string(html, False)
-        
+        print("1")
+        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe")   
+        print("2")
+        pdf = pdfkit.from_string(html, False, options=options, configuration=pdfkit_config)
+        print("3")
         # Create the response
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
