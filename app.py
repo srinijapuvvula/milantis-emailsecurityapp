@@ -766,7 +766,7 @@ def generate_pdf():
         )
         # Generate PDF using pdfkit removed weasyprint
         print("1")
-        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe")   
+        pdfkit_config = pdfkit.configuration(wkhtmltopdf=r"usr\bin\wkhtmltopdf.exe")   
         print("2")
         pdf = pdfkit.from_string(html, False, options=options, configuration=pdfkit_config)
         print("3")
