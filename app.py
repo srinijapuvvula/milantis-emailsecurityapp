@@ -718,6 +718,12 @@ def txt_lookup(domain):
         txt_results = None
     return txt_results
 
+def get_wkhtmltopdf_path():
+    if os.getenv("WEBSITE_HOSTNAME"):  # If running on Azure Web Apps
+        return "/home/site/wwwroot/wkhtmltopdf"
+    else:  # Local development path
+        return "C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe"
+
 #PDF generation
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
