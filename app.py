@@ -27,37 +27,6 @@ import platform
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
 
-# Function to determine wkhtmltopdf path based on platform
-def get_wkhtmltopdf_path():
-    system = platform.system().lower()
-    
-    # Path for Azure App Service (Linux)
-    if system == 'linux':
-        # Common Linux paths
-        linux_paths = [
-            '/usr/bin/wkhtmltopdf',
-            '/usr/local/bin/wkhtmltopdf',
-            '/home/site/wwwroot/bin/wkhtmltopdf'  # Azure App Service custom path
-        ]
-        for path in linux_paths:
-            if os.path.isfile(path):
-                return path
-                
-    # Path for Windows
-    elif system == 'windows':
-        # Common Windows paths
-        windows_paths = [
-            r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe',
-            r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe',
-            r'C:\Users\SanjayBandari\Downloads\wkhtmltox-0.12.6-0.20200605.30.rc.faa06fa.msvc2015-win32.exe',
-            r'usr\bin\wkhtmltopdf.exe'  # Your original path
-        ]
-        for path in windows_paths:
-            if os.path.isfile(path):
-                return path
-    
-    # Default to no path (let pdfkit try to find it)
-    return None
 
 # Flask App Initialization
 app = Flask(__name__)
@@ -727,6 +696,16 @@ def get_wkhtmltopdf_path():
 #PDF generation
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
+    print(f"🔍 Received request with method: {request.method}")
+    print(f"🔍 Request Headers: {request.headers}")
+    print(f"🔍 Request Form Data: {request.form}")
+    if request.method != 'POST':
+        return "Method Not Allowed", 405  # Explicitly return 405 for non-POST requests
+
+    domain = request.form.get('domain', 'unknown')
+    print(f"✅ Received domain: {domain}")
+    
+    # Proceed with PDF generation...
     try:
         # Get data from the form
         domain = request.form.get('domain', 'unknown')
