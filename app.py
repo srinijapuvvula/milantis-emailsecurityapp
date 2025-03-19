@@ -123,6 +123,7 @@ def login():
         user = cursor.fetchone()
         cursor.close()
         db.close()
+        print("asdf3")
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
             session["user_id"] = user[0]
@@ -795,12 +796,12 @@ def results():
     hosting_provider = dns_hosting_provider(domain)
     dns_provider = get_dns_hosting_provider(domain)
 
-
+    print("asdf")
 
     domain = request.form.get('domain', '').strip()
     blocklist_status = []  # Initialize as an empty list
     resolved_ips = []  # To store resolved IP addresses
-
+    print("asdf2")
     try:
         # Resolve the domain to its IP addresses
         ip_addresses = resolver.resolve(domain, 'A')  # 'A' record for IPv4
