@@ -374,7 +374,7 @@ def default():
 def logout():
     """Clear session and log out the user."""
     session.clear()
-    flash("✅ You have been logged out!", "success")
+    # flash("You have been logged out!", "success")
     return redirect("/login")
 
 

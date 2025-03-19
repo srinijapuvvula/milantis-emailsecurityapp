@@ -120,6 +120,42 @@
         top: 50px;
         right: 50px;
         }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .button-container form {
+            display: inline;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #1e90ff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+        }
+        .btn:hover {
+            background-color: #1c86ee;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #ff4500;
+        }
+        .btn-danger:hover {
+            background-color: #ff6347;
+        }
     </style>
 </head>
 <body>
@@ -378,7 +414,12 @@
         {% else %}
             <p class="error">No data available.</p>
         {% endif %}
-        <div class="export-button">
+        <div class="button-container">
+            <form action="/logout" method="GET">
+                <button type="submit" class="btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
             <form action="/generate-pdf" method="POST">
                 <!-- Hidden inputs to pass the data -->
                 <input type="hidden" name="domain" value="{{ domain }}">
@@ -387,6 +428,7 @@
                 </button>
             </form>
         </div>
+    </div>
                 
     </div>
 </body>
