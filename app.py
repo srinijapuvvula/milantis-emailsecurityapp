@@ -130,10 +130,10 @@ def login():
         if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
             session["user_id"] = user[0]
             session["email"] = email
-            flash("Login successful!", "success")
+            # flash("Login successful!", "success")
             return redirect("/dashboard")
 
-        flash("Invalid email or password", "danger")
+        # flash("Invalid email or password", "danger")
 
     return render_template("login.html")
 
@@ -836,6 +836,33 @@ def results():
 
     return render_template('results.html', domain=domain, dns_provider=dns_provider, hosting_provider=hosting_provider, txt_results=txt_results, mta_sts_results=mta_sts_results, mx_results=mx_results, dmarc_results=dmarc_results, dkim_results=dkim_results, spf_results=spf_results, dns_results=dns_results, blocklist_status=blocklist_status, ip_location=ip_location, current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_security=True)
  
+@app.route('/view-profile')
+def view_profile():
+    if 'user_id' not in session:
+        flash("You need to log in to view your profile.", "danger")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT first_name, last_name, email FROM users WHERE id=?", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    db.close()
+
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # Manually convert the result to a dictionary
+    user_dict = {
+        'first_name': user[0],
+        'last_name': user[1],
+        'email': user[2]
+    }
+
+    return render_template('profile.html', user=user_dict)
+
 # if __name__ == '__main__':
 #     app.run(debug=True, host="0.0.0.0", port=8080)
 
