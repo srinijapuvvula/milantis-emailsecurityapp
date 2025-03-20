@@ -1,5 +1,6 @@
 import shutil
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
+from functools import wraps
 from dns import resolver
 from io import BytesIO
 import pdfkit
@@ -101,7 +102,7 @@ def signup():
             cursor.close()
             db.close()
 
-            flash("Account created successfully!", "success")
+            # flash("Account created successfully!", "success")
             return redirect('/login')
 
         except Exception as e:  # Catch all exceptions
@@ -109,6 +110,17 @@ def signup():
             return render_template('signup.html')
 
     return render_template('signup.html')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("You need to log in to access this page.", "danger")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -361,6 +373,7 @@ def view_report(blob_name):
 
 # Dashboard Route
 @app.route('/dashboard')
+@login_required
 def dashboard():
     return render_template('index.html')
 
@@ -696,6 +709,7 @@ def get_wkhtmltopdf_path():
 
 #PDF generation
 @app.route('/generate-pdf', methods=['POST'])
+@login_required
 def generate_pdf():
     print(f"🔍 Received request with method: {request.method}")
     print(f"🔍 Request Headers: {request.headers}")
@@ -787,6 +801,7 @@ def generate_pdf():
 
 # Route to get DNS information and perform lookups
 @app.route('/emailsecurity-results', methods=['POST'])
+@login_required
 def results():
     domain = request.form['domain']
     mx_results = mx_lookup(domain)

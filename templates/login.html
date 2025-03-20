@@ -28,7 +28,7 @@
             top: 0;
         }
         .navbar img {
-            width: 150px; /* Adjust the width as needed */
+            width: 250px; /* Adjust the width as needed */
         }
         .navbar a {
             color: white;
@@ -37,7 +37,7 @@
             font-size: 18px;
         }
         .navbar a:hover {
-            background-color: #e65c00;
+            background-color: #b1b3c4;
             border-radius: 4px;
         }
         .container {
@@ -46,7 +46,7 @@
             border-radius: 10px;
             padding: 30px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            /* text-align: center; */
             margin-top: 80px; /* Adjusted to account for the navbar height */
         }
         h2 {
@@ -78,13 +78,13 @@
             cursor: pointer;
         }
         button:hover {
-            background-color: #e65c00;
+            background-color: #b1b3c4;
         }
         .signup-link {
             text-align: center;
             margin-top: 20px;
             font-size: 0.9em;
-            color: #ffffff;
+            color: #f68016;
         }
         .signup-link a {
             color: #00d1ff;
@@ -96,7 +96,7 @@
         .small-text {
             font-size: 0.9em;
             font-style: italic;
-            color: #ffffff;
+            color: #f68016;
             margin-top: 15px;
             margin-bottom: 10px;
         }
@@ -123,11 +123,13 @@
 </head>
 <body>
     <div class="navbar">
-        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo">
-        <div>
-            <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a>
+        <div class="top-left-container">
+            <a href="https://www.modaexperts.com" target="_blank">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo">
+            </a>
+        </div>
+        <div class="top-right-container">
+
         </div>
     </div>
     <div class="container">
@@ -157,7 +159,7 @@
 
         <div class="small-text">
             Don't have an account? 
-            <a href="{{ url_for('signup') }}" style="color: #ffffff; font-weight: bold; text-decoration: none;">
+            <a href="{{ url_for('signup') }}" style="color: #f68016; font-weight: bold; text-decoration: none;">
                 Create Account!
             </a>
         </div>        
