@@ -29,7 +29,6 @@ from weasyprint import HTML
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
 
-
 # Flask App Initialization
 app = Flask(__name__)
 
@@ -88,21 +87,20 @@ def signup():
 
         db = get_db_connection()
         if db is None:
-           
-           # flash("Database connection failed!", "danger")
+            flash("Database connection failed!", "danger")
             return redirect('/signup')
 
         try:
             cursor = db.cursor()
             cursor.execute(
-                "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                (first_name, last_name, email, hashed_password)
+                "INSERT INTO users (first_name, last_name, email, password, is_approved) VALUES (?, ?, ?, ?, ?)",
+                (first_name, last_name, email, hashed_password, False)
             )
             db.commit()
             cursor.close()
             db.close()
 
-            # flash("Account created successfully!", "success")
+            flash("Registration successful. Waiting for approval.", "success")
             return redirect('/login')
 
         except Exception as e:  # Catch all exceptions
@@ -120,7 +118,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -133,23 +130,62 @@ def login():
 
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT id, password FROM users WHERE email=?", (email,))
+        cursor.execute("SELECT id, password, is_approved FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
         db.close()
-        print("asdf3")
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+            if not user[2]:  # Check if the user is approved
+                flash("Account pending approval.", "danger")
+                return render_template("login.html")
             session["user_id"] = user[0]
             session["email"] = email
-            # flash("Login successful!", "success")
+            flash("Login successful!", "success")
             return redirect("/dashboard")
 
-        # flash("Invalid email or password", "danger")
+        flash("Invalid email or password", "danger")
 
     return render_template("login.html")
 
+# Admin route to approve users
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if session.get('email') != "admin@modaexperts.com":
+        flash("Only admin users can access this page.", "danger")
+        return redirect(url_for('dashboard'))
 
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, first_name, last_name, email, is_approved FROM users ORDER BY id DESC")
+    users = cursor.fetchall()
+    cursor.close()
+    db.close()
+
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/users/<int:user_id>/approve', methods=['POST'])
+@login_required
+def approve_user(user_id):
+    if session.get('email') != "admin@modaexperts.com":
+        flash("Only admin users can access this page.", "danger")
+        return redirect(url_for('dashboard'))
+
+    approve = request.form.get('approve', 'false').lower() == 'true'
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("UPDATE users SET is_approved = ? WHERE id = ?", (approve, user_id))
+    db.commit()
+    cursor.close()
+    db.close()
+
+    action = "approved" if approve else "rejected"
+    flash(f"User successfully {action}.", "success")
+    return redirect(url_for('admin_users'))
+
+    
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -260,7 +296,7 @@ def extract_date_range(blob_name):
         # Handle ZIP files
         with zipfile.ZipFile(BytesIO(file_data)) as zip_file:
             for file_name in zip_file.namelist():
-                if file_name.endswith('.xml'):
+                if (file_name.endswith('.xml')):
                     with zip_file.open(file_name) as xml_file:
                         tree = etree.parse(xml_file)
                         begin_epoch = int(tree.findtext('.//date_range/begin'))

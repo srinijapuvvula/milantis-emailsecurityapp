@@ -1,9 +1,35 @@
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div>
-            {% for category, message in messages %}
-                <p class="alert alert-{{ category }}">{{ message }}</p>
-            {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application</title>
+    <style>
+        /* Add your styles here */
+    </style>
+</head>
+<body>
+    <nav>
+        <!-- <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+            {% if session['email'] == 'admin@modaexperts.com' %}
+            <li><a href="/admin/users">Admin Users</a></li>
+            {% endif %}
+            <li><a href="/logout">Logout</a></li>
+        </ul> -->
+    </nav>
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div>
+                    {% for category, message in messages %}
+                        <p class="alert alert-{{ category }}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -99,7 +99,7 @@
         .button-link:hover {
             background-color: #b1b3c4;
         }
- 
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -181,11 +181,19 @@
             <button class="dropbtn">P</button>
             <div class="dropdown-content">
                 <a href="{{ url_for('view_profile') }}">View Profile</a>
+                {% if session['email'] == 'admin@modaexperts.com' %}
+                <a href="{{ url_for('admin_users') }}">Admin Options</a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>
     </div>
     <div class="container">
+        {% extends "base.html" %}
+
+        {% block title %}Dashboard{% endblock %}
+
+        {% block content %}
         <h1>DNS Lookup</h1>
         <div class="form-section">
             <form action="/emailsecurity-results" method="post">
@@ -200,16 +208,17 @@
             <!-- Use the domain input from the DNS Lookup section -->
             <a href="#" onclick="goToAggregateReports()" class="button-link">View Aggregate Reports</a>
         </div>
-    </div>
 
-    <script>
-        function goToAggregateReports() {
-            const domain = document.getElementById("domain").value;
-            if (domain) {
-                // Redirect with domain as query parameter
-                window.location.href = `/aggregate_reports?domain=${encodeURIComponent(domain)}`;
+        <script>
+            function goToAggregateReports() {
+                const domain = document.getElementById("domain").value;
+                if (domain) {
+                    // Redirect with domain as query parameter
+                    window.location.href = `/aggregate_reports?domain=${encodeURIComponent(domain)}`;
+                }
             }
-        }
-    </script>
+        </script>
+        {% endblock %}
+    </div>
 </body>
 </html>
