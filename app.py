@@ -141,7 +141,7 @@ def login():
                 return render_template("login.html")
             session["user_id"] = user[0]
             session["email"] = email
-            flash("Login successful!", "success")
+            # flash("Login successful!", "success")
             return redirect("/dashboard")
 
         flash("Invalid email or password", "danger")

@@ -9,7 +9,7 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
-            color: #f68016;
+            color: #0f1557;
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -21,7 +21,7 @@
         }
         .navbar {
             width: 100%;
-            background-color: #f68016;
+            background-color: #0f1557;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -39,9 +39,55 @@
             padding: 10px 20px;
             font-size: 18px;
         }
-        .navbar a:hover {
-            background-color: #e65c00;
-            border-radius: 4px;
+
+  
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #b1b3c4;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown:hover .dropbtn {
+            background-color: #ffffff;
+        }
+        /* profile dropdown settings */
+        .dropbtn { 
+            background-color: #ffffff;
+            color: #0f1557;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 90px;;
         }
         .container {
             width: 400px;
@@ -54,7 +100,7 @@
         }
         h1 {
             text-align: center;
-            color: #f68016;
+            color: #0f1557;
         }
         .profile-info {
             margin-top: 20px;
@@ -63,11 +109,13 @@
             font-size: 18px;
             color: #000000;
         }
+
+        /* Back to Dashboard settings */
         .btn {
             padding: 10px 20px;
             font-size: 16px;
             color: #fff;
-            background-color: #f68016;
+            background-color: #0f1557;
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -78,7 +126,7 @@
             transition-duration: 0.4s;
         }
         .btn:hover {
-            background-color: #e65c00;
+            background-color: #0f1557;
             color: white;
         }
     </style>
@@ -86,12 +134,17 @@
 <body>
     <div class="navbar">
         <a href="https://www.modaexperts.com" target="_blank">
-            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo">
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
         </a>
-        <div>
-            <!-- <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a> -->
+        <div class="dropdown">
+            <button class="dropbtn">P</button>
+            <div class="dropdown-content">
+                <!-- <a href="{{ url_for('view_profile') }}">View Profile</a> -->
+                {% if session['email'] == 'admin@modaexperts.com' %}
+                <a href="{{ url_for('admin_users') }}">Admin Options</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
         </div>
     </div>
     <div class="container">

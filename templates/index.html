@@ -10,7 +10,7 @@
             margin: 0;
             padding: 0;
             background-color: #ffffff;
-            color: #f68016;
+            color: #0f1557;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,7 +19,7 @@
         }
         .navbar {
             width: 100%;
-            background-color: #f68016;
+            background-color: #0f1557;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -35,10 +35,7 @@
             padding: 10px 20px;
             font-size: 18px;
         }
-        .navbar a:hover {
-            background-color: #b1b3c4;
-            border-radius: 4px;
-        }
+
         .container {
             flex: 1;
             display: flex;
@@ -46,14 +43,14 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            box-shadow: 0px 0px 20px rgba(199, 118, 118, 0.2);
+            box-shadow: 0px 0px 20px rgb(255, 255, 255);
             border-radius: 12px;
             text-align: center;
             margin-top: 20px;
             overflow: hidden; /* Prevent scrolling */
         }
         h1, h2 {
-            color: #f68016;
+            color: #0f1557;
             margin: 20px 0;
         }
         .form-section {
@@ -64,7 +61,7 @@
             font-weight: bold;
             display: block;
             margin-bottom: 10px;
-            color: #f68016;
+            color: #0f1557;
         }
         input[type="text"], input[type="file"] {
             width: 60%;
@@ -78,7 +75,7 @@
         button[type="submit"] {
             padding: 10px 20px;
             font-size: 18px;
-            background-color: #f68016;
+            background-color: #0f1557;
             color: white;
             border: none;
             border-radius: 4px;
@@ -89,7 +86,7 @@
             padding: 10px 20px;
             font-size: 18px;
             color: white;
-            background-color: #f68016;
+            background-color: #0f1557;
             border-radius: 4px;
             text-decoration: none;
             text-align: center;
@@ -137,8 +134,8 @@
         }
 
         .dropbtn {
-            background-color: #0f1557;
-            color: white;
+            background-color: #ffffff;
+            color: #0f1557;
             padding: 16px;
             font-size: 16px;
             border: none;
@@ -155,7 +152,7 @@
             padding: 15px 30px; /* Increase padding for larger button */
             font-size: 18px; /* Increase font size */
             color: #fff;
-            background-color: #f68016;
+            background-color: #ffffff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -167,7 +164,7 @@
         }
 
         .btn:hover {
-            background-color: #f68016;
+            background-color: #0f1557;
             color: white;
         }
     </style>
@@ -175,7 +172,7 @@
 <body>
     <div class="navbar">
         <a href="https://www.modaexperts.com" target="_blank">
-            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo">
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
         </a>
         <div class="dropdown">
             <button class="dropbtn">P</button>
@@ -203,10 +200,10 @@
             </form>
         </div>
 
-        <h1>Fetch DMARC Report from Azure Storage</h1>
+        <!-- <h1>Fetch DMARC Report from Azure Storage</h1> -->
         <div class="form-section">
             <!-- Use the domain input from the DNS Lookup section -->
-            <a href="#" onclick="goToAggregateReports()" class="button-link">View Aggregate Reports</a>
+            <a href="#" onclick="goToAggregateReports()" class="button-link">View Dmarc Reports</a>
         </div>
 
         <script>
