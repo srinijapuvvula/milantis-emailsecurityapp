@@ -8,7 +8,7 @@ import dns.resolver
 import logging
 import os
 from lxml import etree
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pytz
 import re
 import gzip
@@ -36,6 +36,22 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=25)
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    session.modified = True
+    if 'last_activity' in session:
+        now = datetime.utcnow()  # Use UTC time to ensure offset-naive datetime
+        last_activity = session['last_activity']
+        if isinstance(last_activity, str):
+            last_activity = datetime.strptime(last_activity, '%Y-%m-%d %H:%M:%S')
+        if (now - last_activity).total_seconds() > app.config['PERMANENT_SESSION_LIFETIME'].total_seconds():
+            session.clear()
+            flash('Session timed out due to inactivity.', 'warning')
+            return redirect(url_for('login'))
+    session['last_activity'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Store UTC time in session
 
 print("\nENV VARIABLES AFTER FORCED .env LOADING:")
 print("AZURE_SQL_CONNECTIONSTRING =", os.getenv("AZURE_SQL_CONNECTIONSTRING"))
@@ -120,6 +136,9 @@ def login_required(f):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+
     if request.method == "POST":
         email = request.form.get("email_login")  # Updated key
         password = request.form.get("password_login")  # Updated key
@@ -141,7 +160,7 @@ def login():
                 return render_template("login.html")
             session["user_id"] = user[0]
             session["email"] = email
-            # flash("Login successful!", "success")
+            session['last_activity'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             return redirect("/dashboard")
 
         flash("Invalid email or password", "danger")
@@ -292,7 +311,7 @@ def extract_date_range(blob_name):
     file_data = blob_client.download_blob().readall()
 
     # Check file type by extension
-    if blob_name.endswith('.zip'):
+    if (blob_name.endswith('.zip')):
         # Handle ZIP files
         with zipfile.ZipFile(BytesIO(file_data)) as zip_file:
             for file_name in zip_file.namelist():
@@ -305,7 +324,7 @@ def extract_date_range(blob_name):
                         end_date = epoch_to_date(end_epoch)
                         return begin_date, end_date
 
-    elif blob_name.endswith('.gz'):
+    elif (blob_name.endswith('.gz')):
         # Handle GZ files
         with gzip.GzipFile(fileobj=BytesIO(file_data)) as gz_file:
             tree = etree.parse(gz_file)
@@ -323,15 +342,15 @@ def fetch_blobs_with_date_ranges(domain_filter=None):
     container_client = blob_service_client.get_container_client(CONTAINER_NAME)
     blobs_with_dates = []
     for blob in container_client.list_blobs():
-        if blob.name.endswith('.zip') or blob.name.endswith('.gz'):
+        if (blob.name.endswith('.zip') or blob.name.endswith('.gz')):
             begin_date, end_date = extract_date_range(blob.name)
-            if begin_date and end_date:
+            if (begin_date and end_date):
                 # Convert begin_date and end_date to EST format for display
                 begin_time_est = epoch_to_est(date_string_to_epoch(begin_date))
                 end_time_est = epoch_to_est(date_string_to_epoch(end_date))
                 domain = blob.name.split('!')[1]  # Extracting the domain
                 # Filter based on domain if domain_filter is provided
-                if domain_filter is None or domain_filter in domain:
+                if (domain_filter is None or domain_filter in domain):
                     blobs_with_dates.append({
                         "name": blob.name,
                         "domain": domain,
@@ -361,8 +380,8 @@ def filter_reports():
     all_blobs = fetch_blobs_with_date_ranges()
     filtered_blobs = [
         blob for blob in all_blobs
-        if date_string_to_epoch(blob['begin_time_est']) >= start_epoch and
-           date_string_to_epoch(blob['end_time_est']) <= end_epoch
+        if (date_string_to_epoch(blob['begin_time_est']) >= start_epoch and
+           date_string_to_epoch(blob['end_time_est']) <= end_epoch)
     ]
     return render_template('aggregate_reports.html', blobs=filtered_blobs, all_blobs=all_blobs)
 
@@ -374,11 +393,11 @@ def view_report(blob_name):
     blob_client = container_client.get_blob_client(blob_name)
     
     # Check if it's a .zip file or .gz file and handle accordingly
-    if blob_name.endswith('.zip'):
+    if (blob_name.endswith('.zip')):
         zip_data = blob_client.download_blob().readall()
         with zipfile.ZipFile(BytesIO(zip_data)) as zip_file:
             for file_name in zip_file.namelist():
-                if file_name.endswith('.xml'):
+                if (file_name.endswith('.xml')):
                     with zip_file.open(file_name) as xml_file:
                         data = parse_dmarc_xml(xml_file)
                         return render_template(
@@ -389,7 +408,7 @@ def view_report(blob_name):
                             dmarc_report=True
                         )
     
-    elif blob_name.endswith('.gz'):
+    elif (blob_name.endswith('.gz')):
         # Handle .gz file extraction (similar to .zip file)
         gz_data = blob_client.download_blob().readall()
         with gzip.GzipFile(fileobj=BytesIO(gz_data)) as gz_file:
@@ -416,7 +435,7 @@ def dashboard():
 # Default Route
 @app.route('/')
 def default():
-    return redirect(url_for('signup'))
+    return redirect(url_for('login'))
 
 # Route for logout
 @app.route("/logout")
@@ -446,7 +465,7 @@ def db_check():
 # Route to handle the DMARC report upload based on EST date
 @app.route('/dmarc-report', methods=['GET', 'POST'])
 def report():
-    if request.method == 'POST':
+    if (request.method == 'POST'):
         start_date = request.form.get('start_date')
         
         # Convert start date to epoch time at midnight UTC (assuming input is in "MM-DD-YYYY" format)
@@ -473,25 +492,25 @@ def report():
             None
         )
 
-        if not file_name:
+        if (not file_name):
             return f"No file found with start date {start_date} (epoch: {start_epoch})"
 
         file_path = os.path.join(uploads_folder, file_name)
         
         # Handle .gz and .zip files
-        if file_name.lower().endswith('.xml'):
+        if (file_name.lower().endswith('.xml')):
             extracted_file_path = file_path  # Use XML directly
 
-        elif file_name.lower().endswith('.zip'):
+        elif (file_name.lower().endswith('.zip')):
             with zipfile.ZipFile(file_path, 'r') as zip_ref:
                 xml_files = [name for name in zip_ref.namelist() if name.endswith('.xml')]
-                if xml_files:
+                if (xml_files):
                     extracted_file_path = os.path.join(uploads_folder, xml_files[0])
                     zip_ref.extract(xml_files[0], uploads_folder)
                 else:
                     return 'No XML file found in the ZIP archive.'
 
-        elif file_name.lower().endswith('.gz'):
+        elif (file_name.lower().endswith('.gz')):
             extracted_file_path = os.path.splitext(file_path)[0] + '.xml'
             with gzip.open(file_path, 'rb') as gz_file:
                 with open(extracted_file_path, 'wb') as extracted_file:
@@ -504,7 +523,7 @@ def report():
         aggregated_data = parse_dmarc_xml(extracted_file_path)
         os.remove(extracted_file_path)  # Clean up extracted XML file if it was decompressed
 
-        if aggregated_data:
+        if (aggregated_data):
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             return render_template('results.html', data=aggregated_data, domain="modaexperts.com", current_datetime=current_datetime, dmarc_report=True)
         else:
@@ -518,49 +537,49 @@ def get_dns_hosting_provider(domain):
         dns_records = dns.resolver.resolve(domain, 'NS')
         nameservers = [ns.target.to_text() for ns in dns_records]
 
-        if any('domaincontrol.com' in ns for ns in nameservers):
+        if (any('domaincontrol.com' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'GoDaddy'"
-        elif any('cloudflare.com' in ns for ns in nameservers):
+        elif (any('cloudflare.com' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Cloudflare'"
-        elif any('dnsmadeeasy.com' in ns for ns in nameservers):
+        elif (any('dnsmadeeasy.com' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'dnsmadeeasy'"     
-        elif any('att' in ns for ns in nameservers):
+        elif (any('att' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'AT&T'"    
-        elif any('google' in ns for ns in nameservers):
+        elif (any('google' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Google'"
-        elif any('googledomains' in ns for ns in nameservers):
+        elif (any('googledomains' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Google'"       
-        elif any('amazonaws.com' in ns for ns in nameservers):
+        elif (any('amazonaws.com' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Amazon'"
-        elif any('awsdns' in ns for ns in nameservers):
+        elif (any('awsdns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Amazon'"
-        elif any('opendns' in ns for ns in nameservers):
+        elif (any('opendns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'OpenDNS - Cisco Umbrella'"
-        elif any('openns' in ns for ns in nameservers):
+        elif (any('openns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'OpenDNS - Cisco Umbrella'"  
-        elif any('azure-dns' in ns for ns in nameservers):
+        elif (any('azure-dns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Azure DNS'"
-        elif any('ns1.com' in ns for ns in nameservers):
+        elif (any('ns1.com' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'IBM NS1'"
-        elif any('nsone' in ns for ns in nameservers):
+        elif (any('nsone' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'NS1'"
-        elif any('ns4' in ns for ns in nameservers):
+        elif (any('ns4' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'ns4'"
-        elif any('akam.net' in ns for ns in nameservers):
+        elif (any('akam.net' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Akamai Technologies'"
-        elif any('ultradns' in ns for ns in nameservers):
+        elif (any('ultradns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Neustar UltraDNS'"
-        elif any('cloudns' in ns for ns in nameservers):
+        elif (any('cloudns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'ClouDNS'"
-        elif any('dynect' in ns for ns in nameservers):
+        elif (any('dynect' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Dyn - Oracle Cloud Infrastructure'"
-        elif any('easydns' in ns for ns in nameservers):
+        elif (any('easydns' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'EasyDNS'"
-        elif any('registrar-servers' in ns for ns in nameservers):
+        elif (any('registrar-servers' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Namecheap'"
-        elif any('bluehost' in ns for ns in nameservers):
+        elif (any('bluehost' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'Bluehost'"
-        elif any('dreamhost' in ns for ns in nameservers):
+        elif (any('dreamhost' in ns for ns in nameservers)):
             return f"Your DNS hosting provider for {domain} is 'DreamHost'"
         else:
             return f"No recognized DNS hosting provider found for {domain}"
@@ -574,7 +593,7 @@ def get_ip_location(ip):
     try:
         # Use an API like ipapi or ipstack (replace 'YOUR_API_KEY' with an actual API key)
         response = requests.get(f"http://ip-api.com/json/{ip}")
-        if response.status_code == 200:
+        if (response.status_code == 200):
             data = response.json()
             return {
                 "country": data.get("country"),
@@ -631,7 +650,7 @@ def dns_hosting_provider(domain):
     try:
         ns_records = dns.resolver.resolve(domain, 'NS')
         hosting_providers = [ns.target.to_text() for ns in ns_records]
-        if hosting_providers:
+        if (hosting_providers):
             return f"Name Server records for {domain}: {', '.join(hosting_providers)}"
         else:
             return None
@@ -676,7 +695,7 @@ def dkim_lookup(domain):
 def spf_lookup(domain):
     try:
         spf_records = dns.resolver.resolve(domain, 'TXT')
-        spf_results = [record.strings[0].decode('utf-8') for record in spf_records if record.strings and record.strings[0].startswith(b"v=spf1")]
+        spf_results = [record.strings[0].decode('utf-8') for record in spf_records if (record.strings and record.strings[0].startswith(b"v=spf1"))]
     except dns.resolver.NXDOMAIN:
         spf_results = None
     return spf_results
@@ -738,7 +757,7 @@ def txt_lookup(domain):
     return txt_results
 
 def get_wkhtmltopdf_path():
-    if os.getenv("WEBSITE_HOSTNAME"):  # If running on Azure Web Apps
+    if (os.getenv("WEBSITE_HOSTNAME")):  # If running on Azure Web Apps
         return "/home/site/wwwroot/wkhtmltopdf"
     else:  # Local development path
         return "C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe"
@@ -750,7 +769,7 @@ def generate_pdf():
     print(f"🔍 Received request with method: {request.method}")
     print(f"🔍 Request Headers: {request.headers}")
     print(f"🔍 Request Form Data: {request.form}")
-    if request.method != 'POST':
+    if (request.method != 'POST'):
         return "Method Not Allowed", 405  # Explicitly return 405 for non-POST requests
 
     domain = request.form.get('domain', 'unknown')
@@ -798,7 +817,7 @@ def generate_pdf():
 
         # Get location for the first IP in DNS results
         ip_location = {}
-        if dns_results and isinstance(dns_results, list):
+        if (dns_results and isinstance(dns_results, list)):
             ip_location = get_ip_location(dns_results[0].strip())
     
         # Render the HTML template with the data
@@ -882,14 +901,14 @@ def results():
 
     # Get location for the first IP in DNS results
     ip_location = {}
-    if dns_results and isinstance(dns_results, list):
+    if (dns_results and isinstance(dns_results, list)):
         ip_location = get_ip_location(dns_results[0].strip())
 
     return render_template('results.html', domain=domain, dns_provider=dns_provider, hosting_provider=hosting_provider, txt_results=txt_results, mta_sts_results=mta_sts_results, mx_results=mx_results, dmarc_results=dmarc_results, dkim_results=dkim_results, spf_results=spf_results, dns_results=dns_results, blocklist_status=blocklist_status, ip_location=ip_location, current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_security=True)
  
 @app.route('/view-profile')
 def view_profile():
-    if 'user_id' not in session:
+    if ('user_id' not in session):
         flash("You need to log in to view your profile.", "danger")
         return redirect(url_for('login'))
 
@@ -901,7 +920,7 @@ def view_profile():
     cursor.close()
     db.close()
 
-    if not user:
+    if (not user):
         flash("User not found.", "danger")
         return redirect(url_for('dashboard'))
 
@@ -913,10 +932,6 @@ def view_profile():
     }
 
     return render_template('profile.html', user=user_dict)
-
-# if __name__ == '__main__':
-#     app.run(debug=True, host="0.0.0.0", port=8080)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
