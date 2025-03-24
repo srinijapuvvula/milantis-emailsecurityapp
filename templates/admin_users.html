@@ -32,17 +32,18 @@
             text-align: left;
         }
         th {
-            background-color: #090d3c;
+            background-color: #0f1557;
             color: white;
         }
         button {
             padding: 5px 10px;
             font-size: 14px;
-            background-color: #090d3c;
-            color: #000000;
+            background-color: #0f1557;
+            color: #ffffff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            margin-right: 5px; /* Add margin to separate buttons */
         }
         button:hover {
             background-color: #b1b3c4;
@@ -51,7 +52,7 @@
             padding: 10px 20px;
             font-size: 16px;
             color: #fff;
-            background-color: #090d3c;
+            background-color: #0f1557;
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -62,6 +63,25 @@
             transition-duration: 0.4s;
         }
     </style>
+    <script>
+        function handleApproval(userId, action) {
+            const approveButton = document.getElementById(`approve-${userId}`);
+            const rejectButton = document.getElementById(`reject-${userId}`);
+            if (action === 'approve') {
+                approveButton.style.display = 'none';
+                rejectButton.style.display = 'inline-block';
+            } else {
+                rejectButton.style.display = 'none';
+                approveButton.style.display = 'inline-block';
+            }
+        }
+
+        function submitForm(userId, action) {
+            const form = document.getElementById(`form-${action}-${userId}`);
+            form.submit();
+            handleApproval(userId, action);
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -86,13 +106,13 @@
                     <td>{{ user[3] }}</td>
                     <td>{{ 'Yes' if user[4] else 'No' }}</td>
                     <td>
-                        <form method="POST" action="{{ url_for('approve_user', user_id=user[0]) }}">
+                        <form id="form-approve-{{ user[0] }}" method="POST" action="{{ url_for('approve_user', user_id=user[0]) }}" style="display: inline;">
                             <input type="hidden" name="approve" value="true">
-                            <button type="submit">Approve</button>
+                            <button type="button" id="approve-{{ user[0] }}" onclick="submitForm({{ user[0] }}, 'approve')" {% if user[4] %}style="display: none;"{% endif %}>Approve</button>
                         </form>
-                        <form method="POST" action="{{ url_for('approve_user', user_id=user[0]) }}">
+                        <form id="form-reject-{{ user[0] }}" method="POST" action="{{ url_for('approve_user', user_id=user[0]) }}" style="display: inline;">
                             <input type="hidden" name="approve" value="false">
-                            <button type="submit">Reject</button>
+                            <button type="button" id="reject-{{ user[0] }}" onclick="submitForm({{ user[0] }}, 'reject')" {% if not user[4] %}style="display: none;"{% endif %}>Reject</button>
                         </form>
                     </td>
                 </tr>
