@@ -527,7 +527,7 @@ def report():
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             return render_template('results.html', data=aggregated_data, domain="modaexperts.com", current_datetime=current_datetime, dmarc_report=True)
         else:
-            return 'No DMARC report data found in the .xml file or parsing error.'
+            return 'NO DMARC report data found in the .XML FILE OR parsing error.'
 
     return render_template('index.html')
 
