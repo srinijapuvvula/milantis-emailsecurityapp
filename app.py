@@ -212,7 +212,7 @@ logging.basicConfig(level=logging.DEBUG)
 current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 # Azure Blob Storage configuration
-AZURE_CONNECTION_STRING = 'DefaultEndpointsProtocol=https;AccountName=dnsanddmarcsg;AccountKey=1/qyAU9++aFoYCDfwcHxBkMSe4+bJmqL74RzE9Gruri/M4Vz/HxKo/zDVGPjVG47jwPMrd891tho+ASt7kHlGg==;EndpointSuffix=core.windows.net'
+AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
 CONTAINER_NAME = 'xmlzipfiles'
 blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
 
