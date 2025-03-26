@@ -84,6 +84,16 @@ def is_password_secure(password):
     pattern = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
     return bool(re.match(pattern, password))
 
+# MX records are required for a domain to send and receive email.
+#     This function helps verify whether the email domain is capable of email communication,
+#     which is useful for filtering out fake or non-functional email addresses.
+def has_valid_mx_record(domain):
+    try:
+        mx_records = dns.resolver.resolve(domain, 'MX')
+        return len(mx_records) > 0
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
+        return False
+
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -91,12 +101,23 @@ def signup():
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email_signup')
+        # Validate that the email domain has valid MX records
+        domain = email.split('@')[-1].lower()
+        if not has_valid_mx_record(domain):
+            flash("The email domain you entered does not appear to support email (missing MX record).", "danger")
+            return render_template('signup.html')
         password = request.form.get('password')
+
+
+        
+
 
         # Check password security
         if not is_password_secure(password):
             flash("Password must contain at least 8 characters, 1 uppercase, 1 number, and 1 special character.", "danger")
             return render_template('signup.html')
+        
+
         
         # Hash the password securely
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -141,6 +162,11 @@ def login():
 
     if request.method == "POST":
         email = request.form.get("email_login")  # Updated key
+        domain = email.split('@')[-1].lower()
+        if not has_valid_mx_record(domain):
+            flash("The email domain is not valid for login (no MX record found).", "danger")
+            return render_template("login.html")
+
         password = request.form.get("password_login")  # Updated key
 
         if not email or not password:
@@ -934,4 +960,4 @@ def view_profile():
     return render_template('profile.html', user=user_dict)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, debug=True)
