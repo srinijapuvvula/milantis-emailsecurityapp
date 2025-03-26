@@ -1,4 +1,4 @@
-import shutil
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from functools import wraps
 from dns import resolver
@@ -6,7 +6,6 @@ from io import BytesIO
 import pdfkit
 import dns.resolver
 import logging
-import os
 from lxml import etree
 from datetime import datetime, timezone, timedelta
 import pytz
@@ -213,6 +212,9 @@ current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 # Azure Blob Storage configuration
 AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
+if not AZURE_CONNECTION_STRING:
+    raise ValueError("AZURE_CONNECTION_STRING environment variable not set.")
+
 CONTAINER_NAME = 'xmlzipfiles'
 blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
 
