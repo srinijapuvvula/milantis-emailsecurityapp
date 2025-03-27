@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Domains</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Your Domains</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Domain Name</th>
+                    <th>Created At</th>
+                    <th>Last Scanned At</th>
+                    <th>Scan Status</th>
+                    <th>Report Path</th>
+                    <th>Is Active</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain in domains %}
+                <tr>
+                    <td>{{ domain[0] }}</td>
+                    <td>{{ domain[1] }}</td>
+                    <td>{{ domain[2] }}</td>
+                    <td>{{ domain[3] }}</td>
+                    <td>{{ domain[4] }}</td>
+                    <td>{{ domain[5] }}</td>
+                    <td>{{ 'Yes' if domain[6] else 'No' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

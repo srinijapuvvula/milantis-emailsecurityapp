@@ -935,5 +935,140 @@ def view_profile():
 
     return render_template('profile.html', user=user_dict)
 
+@app.route('/add_domain', methods=['GET', 'POST'])
+@login_required
+def add_domain():
+    if request.method == 'POST':
+        domain_name = request.form.get('domain_name')
+        user_id = session['user_id']
+
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO domains (user_id, domain_name) VALUES (?, ?)", (user_id, domain_name))
+        db.commit()
+        cursor.close()
+        db.close()
+
+        flash("Domain added successfully.", "success")
+        return redirect(url_for('view_domains'))
+
+    return render_template('add_domain.html')
+
+@app.route('/view_domains')
+@login_required
+def view_domains():
+    user_id = session['user_id']
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
+    domains = cursor.fetchall()
+    cursor.close()
+    db.close()
+
+    return render_template('view_domains.html', domains=domains)
+
+import requests
+
+@app.route('/website-scan', methods=['POST'])
+@login_required
+def website_scan():
+    website = request.form.get('website')
+    if not website:
+        flash("Please enter a website to scan.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # Burp Suite REST API configuration
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"  # Update with your Burp API URL
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        # Add configuration type to the scan data
+        scan_data = {
+            "urls": [website],  # The target website
+            "configuration": "audit-passive"  # Set the configuration type here
+        }
+
+        # Send the POST request to start the scan
+        response = requests.post(f"{BURP_API_URL}/scan", json=scan_data, headers=headers)
+
+        # Log the response for debugging
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {response.headers}")
+        print(f"Response body: {response.text}")
+
+        if response.status_code == 201:  # Scan created successfully
+            # Extract the scan_id from the Location header
+            location_header = response.headers.get("Location")
+            if location_header:
+                scan_id = location_header.split("/")[-1]  # Extract the last part of the URL
+                flash(f"Scan started for website '{website}'. Scan ID: {scan_id}", "success")
+                return redirect(url_for('scan_status', scan_id=scan_id))
+            else:
+                flash("Scan started, but no scan ID was returned in the response.", "warning")
+        else:
+            flash(f"Failed to start scan: {response.text}", "danger")
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+
+    return redirect(url_for('dashboard'))
+@app.route('/scan-results/<int:scan_id>', methods=['GET'])
+@login_required
+def scan_results(scan_id):
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        response = requests.get(f"{BURP_API_URL}/scan/{scan_id}", headers=headers)
+
+        if response.status_code == 200:
+            scan_data = response.json()
+            issues = scan_data.get("issue_events", [])
+            if not issues:
+                flash("No issues were found for this scan.", "info")
+            return render_template('scan_results.html', scan_id=scan_id, issues=issues)
+        
+        elif response.status_code == 500:
+            flash("An internal server error occurred while fetching scan results. Please check Burp Suite logs.", "danger")
+        
+        else:
+            print(f"Failed to fetch scan results: {response.status_code} - {response.text}")
+            flash(f"Failed to fetch scan results: {response.text}", "danger")
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+        print(f"Error: {e}")
+
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/scan-status/<int:scan_id>', methods=['GET'])
+@login_required
+def scan_status(scan_id):
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        response = requests.get(f"{BURP_API_URL}/scan/{scan_id}", headers=headers)
+
+        if response.status_code == 200:
+            scan_data = response.json()
+            # Add a default value for issue_counts if it doesn't exist
+            if 'issue_counts' not in scan_data:
+                scan_data['issue_counts'] = {'total': 'Not available yet'}
+            print(f"Scan Status: {scan_data}")
+            return render_template('scan_status.html', scan_data=scan_data)
+        else:
+            flash(f"Failed to fetch scan status: {response.text}", "danger")
+            return redirect(url_for('dashboard'))
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+        return redirect(url_for('dashboard'))
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=5000)

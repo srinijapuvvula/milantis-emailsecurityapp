@@ -200,7 +200,15 @@
             </form>
         </div>
 
-        <!-- <h1>Fetch DMARC Report from Azure Storage</h1> -->
+        <h1>Website Scan</h1>
+        <div class="form-section">
+            <form action="/website-scan" method="post">
+                <label for="website">Enter website:</label>
+                <input type="text" id="website" name="website" required>
+                <button type="submit">Scan</button>
+            </form>
+        </div>
+
         <div class="form-section">
             <!-- Use the domain input from the DNS Lookup section -->
             <a href="#" onclick="goToAggregateReports()" class="button-link">View Dmarc Reports</a>
