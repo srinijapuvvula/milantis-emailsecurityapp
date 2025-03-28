@@ -37,6 +37,11 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=25)
 
+@app.context_processor
+def inject_request():
+    return dict(request=request)
+
+
 @app.before_request
 def make_session_permanent():
     session.permanent = True
@@ -122,7 +127,7 @@ def signup():
             flash(f"Database error: {str(e)}", "danger")
             return render_template('signup.html')
 
-    return render_template('signup.html')
+    return render_template('signup.html', show_navbar=False)
 
 def login_required(f):
     @wraps(f)
@@ -164,7 +169,7 @@ def login():
 
         flash("Invalid email or password", "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", show_navbar=True)
 
 # Admin route to approve users
 @app.route('/admin/users')
@@ -432,12 +437,16 @@ def view_report(blob_name):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html')
+    return render_template('index.html', show_navbar=True)
 
 # Default Route
 @app.route('/')
 def default():
     return redirect(url_for('login'))
+
+@app.route('/logout-confirm')
+def logout_confirm():
+    return render_template('logout.html')
 
 # Route for logout
 @app.route("/logout")
@@ -933,7 +942,7 @@ def view_profile():
         'email': user[2]
     }
 
-    return render_template('profile.html', user=user_dict)
+    return render_template('profile.html', user=user_dict, show_navbar=True)
 
 @app.route('/add_domain', methods=['GET', 'POST'])
 @login_required
@@ -1014,6 +1023,7 @@ def website_scan():
         flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
 
     return redirect(url_for('dashboard'))
+
 @app.route('/scan-results/<int:scan_id>', methods=['GET'])
 @login_required
 def scan_results(scan_id):
@@ -1071,4 +1081,4 @@ def scan_status(scan_id):
         return redirect(url_for('dashboard'))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000,debug=True)
