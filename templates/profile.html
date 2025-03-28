@@ -1,160 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #0f1557;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Prevent scrolling */
-        }
-        .navbar {
-            width: 100%;
-            background-color: #0f1557;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            position: absolute;
-            top: 0;
-        }
-        .navbar img {
-            width: 250px; /* Adjust the width as needed */
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 18px;
+{% extends 'root.html' %}
+
+{% block content %}
+<style>
+    .profile-wrapper {
+        min-height: calc(100vh - 85px); /* Adjust based on actual navbar height */
+        padding: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-wrapper .card {
+            padding: 1.5rem !important;
         }
 
-  
-        .dropdown {
-            position: relative;
-            display: inline-block;
+        .profile-wrapper img {
+            width: 120px;
+            height: 120px;
         }
 
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
+        .profile-wrapper h3 {
+            font-size: 1.5rem;
         }
+    }
+</style>
 
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
+<div class="container profile-wrapper d-flex justify-content-center align-items-center">
+    <div class="card p-4 rounded-5 shadow w-100" style="max-width: 900px; background: #f8f9fa;">
+        <div class="row g-0 flex-column flex-md-row">
+            <!-- Left section: Profile Info -->
+            <div class="col-md-6 d-flex flex-column align-items-center justify-content-center p-4 text-center">
+                <img src="{{ url_for('static', filename='profile-photo.jpg') }}" alt="Profile Picture"
+                     class="rounded-circle border border-4 border-info shadow-sm mb-3" width="150" height="150">
+                <h3 class="fw-bold text-dark">{{ user.first_name }} {{ user.last_name }}</h3>
+                <p class="text-muted mb-0">{{ user.email }}</p>
+            </div>
 
-        .dropdown-content a:hover {
-            background-color: #b1b3c4;
-        }
+            <!-- Right section: Details + Actions -->
+            <div class="col-md-6 p-4">
+                <h5 class="mb-3 fw-semibold">Profile Details</h5>
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item bg-transparent"><strong>First Name:</strong> {{ user.first_name }}</li>
+                    <li class="list-group-item bg-transparent"><strong>Last Name:</strong> {{ user.last_name }}</li>
+                    <li class="list-group-item bg-transparent"><strong>Email:</strong> {{ user.email }}</li>
+                </ul>
 
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        .dropdown:hover .dropbtn {
-            background-color: #ffffff;
-        }
-        /* profile dropdown settings */
-        .dropbtn { 
-            background-color: #ffffff;
-            color: #0f1557;
-            padding: 16px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 90px;;
-        }
-        .container {
-            width: 400px;
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            margin-top: 80px; /* Adjusted to account for the navbar height */
-        }
-        h1 {
-            text-align: center;
-            color: #0f1557;
-        }
-        .profile-info {
-            margin-top: 20px;
-        }
-        .profile-info p {
-            font-size: 18px;
-            color: #000000;
-        }
-
-        /* Back to Dashboard settings */
-        .btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            color: #fff;
-            background-color: #0f1557;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 4px 2px;
-            transition-duration: 0.4s;
-        }
-        .btn:hover {
-            background-color: #0f1557;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="https://www.modaexperts.com" target="_blank">
-            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
-        </a>
-        <div class="dropdown">
-            <button class="dropbtn">P</button>
-            <div class="dropdown-content">
-                <!-- <a href="{{ url_for('view_profile') }}">View Profile</a> -->
-                {% if session['email'] == 'admin@modaexperts.com' %}
-                <a href="{{ url_for('admin_users') }}">Admin Options</a>
-                {% endif %}
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <div class="d-grid gap-2">
+                    {% if session['email'] == 'admin@modaexperts.com' %}
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">Admin Options</a>
+                    {% endif %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+                    <a href="{{ url_for('logout_confirm') }}" class="btn text-white" style="background-color: #0f1557;">Logout</a>
+                </div>
             </div>
         </div>
     </div>
-    <div class="container">
-        <h1>Profile</h1>
-        <div class="profile-info">
-            <p><strong>First Name:</strong> {{ user.first_name }}</p>
-            <p><strong>Last Name:</strong> {{ user.last_name }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-        </div>
-        <a href="{{ url_for('dashboard') }}" class="btn">Back to Dashboard</a>
-    </div>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,229 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNS Lookup and DMARC Report Upload</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #ffffff;
-            color: #0f1557;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden; /* Prevent scrolling */
-        }
-        .navbar {
-            width: 100%;
-            background-color: #0f1557;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .navbar img {
-            width: 250px; /* Adjust the width as needed */
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 18px;
-        }
+{% extends "root.html" %}
 
-        .container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-shadow: 0px 0px 20px rgb(255, 255, 255);
-            border-radius: 12px;
-            text-align: center;
-            margin-top: 20px;
-            overflow: hidden; /* Prevent scrolling */
+{% block content %}
+<style>
+    @media (max-width: 576px) {
+        #domain {
+            width: 100% !important;
         }
-        h1, h2 {
-            color: #0f1557;
-            margin: 20px 0;
-        }
-        .form-section {
-            margin-bottom: 20px;
-        }
-        label {
-            font-size: 18px;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 10px;
-            color: #0f1557;
-        }
-        input[type="text"], input[type="file"] {
-            width: 60%;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-        button[type="submit"] {
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: #0f1557;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .button-link {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 18px;
-            color: white;
-            background-color: #0f1557;
-            border-radius: 4px;
-            text-decoration: none;
-            text-align: center;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        .button-link:hover {
-            background-color: #b1b3c4;
-        }
+    }
 
-        .dropdown {
-            position: relative;
-            display: inline-block;
-            margin-right: 20px; /* Adjust the margin to move the profile circle to the left */
-            top: 5px;
-            margin-right: 100px;
-        }
+    .btn:hover {
+        transform: scale(1.03);
+        transition: transform 0.2s ease-in-out;
+    }
+</style>
 
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
+<div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 85px); padding-top: 40px; padding-bottom: 40px;">
+    <div class="container text-center px-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
+        <h1 class="mb-4" style="color: #0f1557;">DNS Lookup</h1>
 
-        .dropdown-content a:hover {
-            background-color: #b1b3c4;
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        .dropdown:hover .dropbtn {
-            background-color: #b1b3c4;
-        }
-
-        .dropbtn {
-            background-color: #ffffff;
-            color: #0f1557;
-            padding: 16px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 15px 30px; /* Increase padding for larger button */
-            font-size: 18px; /* Increase font size */
-            color: #fff;
-            background-color: #ffffff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 4px 2px;
-            transition-duration: 0.4s;
-        }
-
-        .btn:hover {
-            background-color: #0f1557;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="https://www.modaexperts.com" target="_blank">
-            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
-        </a>
-        <div class="dropdown">
-            <button class="dropbtn">P</button>
-            <div class="dropdown-content">
-                <a href="{{ url_for('view_profile') }}">View Profile</a>
-                {% if session['email'] == 'admin@modaexperts.com' %}
-                <a href="{{ url_for('admin_users') }}">Admin Options</a>
-                {% endif %}
-                <a href="{{ url_for('logout') }}">Logout</a>
-            </div>
+        <div class="form-section mb-4">
+            <form action="/emailsecurity-results" method="post" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="domain" class="form-label fw-bold" style="color: #0f1557;">Enter domain:</label>
+                    <input type="text" id="domain" name="domain" class="form-control mx-auto"
+                        required style="background-color: #f0f0f0; color: #000; border: 2px solid #0f1557; caret-color: #0f1557; max-width: 400px;">
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn text-white px-5 py-2" style="background-color: #0f1557;">
+                        <i class="fas fa-search me-2"></i> Lookup
+                    </button>
+                </div>
+            </form>
         </div>
-    </div>
-    <div class="container">
-        {% extends "base.html" %}
-
-        {% block title %}Dashboard{% endblock %}
-
-        {% block content %}
-        <h1>DNS Lookup</h1>
-        <div class="form-section">
-            <form action="/emailsecurity-results" method="post">
-                <label for="domain">Enter domain:</label>
-                <input type="text" id="domain" name="domain" required>
-                <button type="submit">Lookup</button>
+        <div class="form-section mb-4">
+            <form action="/website-scan" method="post" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="website" class="form-label fw-bold" style="color: #0f1557;">Enter website:</label>
+                    <input type="text" id="website" name="website" class="form-control mx-auto"
+                        required style="background-color: #f0f0f0; color: #000; border: 2px solid #0f1557; caret-color: #0f1557; max-width: 400px;">
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn text-white px-5 py-2" style="background-color: #0f1557;">
+                        <i class="fas fa-search me-2"></i> Website Scan
+                    </button>
+                </div>
             </form>
         </div>
 
-        <h1>Website Scan</h1>
-        <div class="form-section">
-            <form action="/website-scan" method="post">
-                <label for="website">Enter website:</label>
-                <input type="text" id="website" name="website" required>
-                <button type="submit">Scan</button>
-            </form>
-        </div>
 
-        <div class="form-section">
-            <!-- Use the domain input from the DNS Lookup section -->
-            <a href="#" onclick="goToAggregateReports()" class="button-link">View Dmarc Reports</a>
-        </div>
 
-        <script>
-            function goToAggregateReports() {
-                const domain = document.getElementById("domain").value;
-                if (domain) {
-                    // Redirect with domain as query parameter
-                    window.location.href = `/aggregate_reports?domain=${encodeURIComponent(domain)}`;
-                }
-            }
-        </script>
-        {% endblock %}
+        <div class="form-section mt-3 d-flex justify-content-center">
+            <a href="#" onclick="goToAggregateReports()" class="btn text-white px-5 py-2" style="background-color: #0f1557;">
+                <i class="fas fa-chart-line me-2"></i> View DMARC Reports
+            </a>
+        </div>
     </div>
-</body>
-</html>
+</div>
+
+<script>
+    function goToAggregateReports() {
+        const domain = document.getElementById("domain").value;
+        if (domain) {
+            window.location.href = `/aggregate_reports?domain=${encodeURIComponent(domain)}`;
+        }
+    }
+</script>
+{% endblock %}

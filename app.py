@@ -449,7 +449,7 @@ def logout_confirm():
     return render_template('logout.html')
 
 # Route for logout
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     """Clear session and log out the user."""
     session.clear()
