@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .navbar {
+            width: 100%;
+            background-color: #0f1557;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar img {
+            width: 200px;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+        .navbar a:hover {
+            background-color: #0f1557;
+            border-radius: 4px;
+        }
+        .container {
+            max-width: 90%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0px 0px 20px rgba(199, 118, 118, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #0f1557;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        strong {
+            color: #0f1557;
+        }
+        a {
+            color: #0f1557;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <img src="/static/logo.svg" alt="Logo">
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    </div>
+    <div class="container">
+        <h1>Scan Status</h1>
+        <p><strong>Scan ID:</strong> {{ scan_data['task_id'] }}</p>
+        <p><strong>Status:</strong> {{ scan_data['scan_status'] }}</p>
+        <p><strong>Progress:</strong> {{ scan_data['scan_metrics']['crawl_and_audit_progress'] }}%</p>
+        <p><strong>Issues Found:</strong> 
+            {% if 'issue_counts' in scan_data %}
+                {{ scan_data['issue_counts']['total'] }}
+            {% else %}
+                Not available yet
+            {% endif %}
+        </p>
+        <p><strong>Elapsed Time:</strong> {{ scan_data['scan_metrics']['total_elapsed_time'] }} seconds</p>
+        <a href="{{ url_for('scan_results', scan_id=scan_data['task_id']) }}">View Issues</a>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="back-link">Back to Dashboard</a>
+</body>
+</html>

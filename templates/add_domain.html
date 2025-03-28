@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Domain</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Add Domain</h2>
+        <form action="{{ url_for('add_domain') }}" method="post">
+            <label for="domain_name">Domain Name:</label>
+            <input type="text" id="domain_name" name="domain_name" required>
+            <button type="submit">Add Domain</button>
+        </form>
+    </div>
+</body>
+</html>

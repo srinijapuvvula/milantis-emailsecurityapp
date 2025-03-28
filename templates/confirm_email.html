@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Email Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .logo {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Email Confirmation</h2>
+        <p>Thank you for registering with Milantis Email Security App. Please confirm your email address by clicking the link below:</p>
+        
+        <a href="{{ confirm_url }}" class="button">Confirm Email</a>
+        
+        <p>If you did not register for this account, you can safely ignore this email.</p>
+        
+        <p>This link will expire in 1 hour.</p>
+        
+        <p>Regards,<br>The Milantis Team</p>
+    </div>
+</body>
+</html>

@@ -1,5 +1,7 @@
 import shutil
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from functools import wraps
 from dns import resolver
 from io import BytesIO
@@ -25,6 +27,9 @@ import pyodbc
 from dotenv import load_dotenv
 import platform
 from weasyprint import HTML
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
@@ -37,6 +42,16 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=25)
+
+# Email configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("ModaExperts")
+
+mail = Mail(app)
 
 @app.before_request
 def make_session_permanent():
@@ -84,15 +99,36 @@ def is_password_secure(password):
     pattern = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
     return bool(re.match(pattern, password))
 
-# MX records are required for a domain to send and receive email.
-#     This function helps verify whether the email domain is capable of email communication,
-#     which is useful for filtering out fake or non-functional email addresses.
-def has_valid_mx_record(domain):
+# Email verification helper functions
+def generate_confirmation_token(email):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt='email-confirmation-salt')
+
+def confirm_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     try:
-        mx_records = dns.resolver.resolve(domain, 'MX')
-        return len(mx_records) > 0
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
+        email = serializer.loads(
+            token,
+            salt='email-confirmation-salt',
+            max_age=expiration
+        )
+        return email
+    except (SignatureExpired, BadSignature):
         return False
+
+def send_confirmation_email(user_email, token):
+    try:
+        confirm_url = url_for('confirm_email', token=token, _external=True)
+        html = render_template('email/confirm_email.html', confirm_url=confirm_url)
+        msg = Message(
+            "Please confirm your email address",
+            recipients=[user_email],
+            html=html
+        )
+        mail.send(msg)
+        print(f"Verification email sent to {user_email}")  # Debug log
+    except Exception as e:
+        print(f"Error sending email: {e}")  # Debug log
 
 # Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
@@ -161,13 +197,8 @@ def login():
         return redirect(url_for('dashboard'))
 
     if request.method == "POST":
-        email = request.form.get("email_login")  # Updated key
-        domain = email.split('@')[-1].lower()
-        if not has_valid_mx_record(domain):
-            flash("The email domain is not valid for login (no MX record found).", "danger")
-            return render_template("login.html")
-
-        password = request.form.get("password_login")  # Updated key
+        email = request.form.get("email_login")
+        password = request.form.get("password_login")
 
         if not email or not password:
             flash("Email and password are required!", "danger")
@@ -175,15 +206,21 @@ def login():
 
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT id, password, is_approved FROM users WHERE email=?", (email,))
+        cursor.execute("SELECT id, password, is_approved, is_email_verified FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
         db.close()
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+            if not user[3]:  # Check if email is verified
+                flash("Please verify your email address before logging in. Check your inbox for the verification link.", "danger")
+                email_verify(email)
+                return render_template("login.html")
+                
             if not user[2]:  # Check if the user is approved
                 flash("Account pending approval.", "danger")
                 return render_template("login.html")
+                
             session["user_id"] = user[0]
             session["email"] = email
             session['last_activity'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
@@ -192,6 +229,47 @@ def login():
         flash("Invalid email or password", "danger")
 
     return render_template("login.html")
+
+def email_verify(receipentmail):
+    message = MIMEMultipart()
+    message["From"] = os.getenv("MAIL_USERNAME")
+    message["To"] = receipentmail
+    message["Subject"] = "OTP for Moda Experts"
+    body = f"""
+    Hello,
+    
+    Your One Time Password(OTP) for Gmail verification: XXXXXX
+    Please Do not share it with anyone by any means.
+    This is confidential and to be used by you only.
+    
+    This code will expire in 10 minutes.
+    
+    Best regards,
+    Moda Experts
+    """
+    
+    message.attach(MIMEText(body, "plain"))
+    
+    try:
+        # Create SMTP session
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], 587)
+        server.starttls()
+        
+        # Login to sender email
+        server.login(os.getenv("MAIL_USERNAME"), os.getenv("MAIL_PASSWORD"))
+        
+        # Send email
+        text = message.as_string()
+        server.sendmail(os.getenv("MAIL_USERNAME"), receipentmail, text)
+        
+        # Close connection
+        server.quit()
+        
+        return body
+        
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        return None
 
 # Admin route to approve users
 @app.route('/admin/users')
@@ -958,6 +1036,50 @@ def view_profile():
     }
 
     return render_template('profile.html', user=user_dict)
+
+@app.route('/confirm/<token>', methods=['GET'])
+def confirm_email(token):
+    try:
+        email = confirm_token(token)
+        if not email:
+            flash('The confirmation link is invalid or has expired.', 'danger')
+            return redirect(url_for('login'))
+        
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Verify the email exists
+        cursor.execute("SELECT id FROM users WHERE email=?", (email,))
+        user = cursor.fetchone()
+        if not user:
+            flash('Email not found.', 'danger')
+            return redirect(url_for('login'))
+            
+        # Update the user's email verification status
+        cursor.execute("UPDATE users SET is_email_verified=? WHERE email=?", (True, email))
+        db.commit()
+        cursor.close()
+        db.close()
+        
+        flash('Your email has been confirmed. You can now log in.', 'success')
+        return redirect(url_for('login'))
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('login'))
+
+@app.route('/test-email')
+def test_email():
+    try:
+        msg = Message(
+            "Test Email",
+            recipients=["your_email@gmail.com"],  # Replace with your email
+            body="This is a test email from Flask-Mail."
+        )
+        mail.send(msg)
+        return "Test email sent successfully!"
+    except Exception as e:
+        return f"Error sending test email: {e}"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
