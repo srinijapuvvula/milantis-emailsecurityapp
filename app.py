@@ -25,6 +25,7 @@ import pyodbc
 from dotenv import load_dotenv
 import platform
 from weasyprint import HTML
+from flask import request
 
 # Load environment variables from .env file (only required if running locally)
 load_dotenv(override=True)
@@ -37,6 +38,11 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=25)
+
+@app.context_processor
+def inject_request():
+    return dict(request=request)
+
 
 @app.before_request
 def make_session_permanent():
@@ -59,7 +65,7 @@ print("AZURE_SQL_CONNECTIONSTRING =", os.getenv("AZURE_SQL_CONNECTIONSTRING"))
 def get_db_connection():
     """Establish connection to Azure SQL Database using environment variable"""
     # Retrieve the connection string and strip quotes
-    connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING", "").replace('"{', '{').replace('}"', '}')
+    connection_string = os.getenv("AZURE_SQL_CONNECTIONSTRING", "")
     print("\nFinal Connection String:", connection_string)
     if not connection_string:
         print("Error: AZURE_SQL_CONNECTIONSTRING environment variable not set.")
@@ -123,7 +129,7 @@ def signup():
             flash(f"Database error: {str(e)}", "danger")
             return render_template('signup.html')
 
-    return render_template('signup.html')
+    return render_template('signup.html', show_navbar=False)
 
 def login_required(f):
     @wraps(f)
@@ -165,7 +171,7 @@ def login():
 
         flash("Invalid email or password", "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", show_navbar=True)
 
 # Admin route to approve users
 @app.route('/admin/users')
@@ -430,15 +436,19 @@ def view_report(blob_name):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html')
+    return render_template('index.html', show_navbar=True)
 
 # Default Route
 @app.route('/')
 def default():
     return redirect(url_for('login'))
 
+@app.route('/logout-confirm')
+def logout_confirm():
+    return render_template('logout.html')
+
 # Route for logout
-@app.route("/logout")
+@app.route("/logout", methods=['POST'])
 def logout():
     """Clear session and log out the user."""
     session.clear()
@@ -529,7 +539,7 @@ def report():
         else:
             return 'No DMARC report data found in the .xml file or parsing error.'
 
-    return render_template('index.html')
+    return render_template('index.html', show_navbar=True)
 
 
 def get_dns_hosting_provider(domain):
@@ -904,7 +914,7 @@ def results():
     if (dns_results and isinstance(dns_results, list)):
         ip_location = get_ip_location(dns_results[0].strip())
 
-    return render_template('results.html', domain=domain, dns_provider=dns_provider, hosting_provider=hosting_provider, txt_results=txt_results, mta_sts_results=mta_sts_results, mx_results=mx_results, dmarc_results=dmarc_results, dkim_results=dkim_results, spf_results=spf_results, dns_results=dns_results, blocklist_status=blocklist_status, ip_location=ip_location, current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_security=True)
+    return render_template('results.html', show_navbar=True, domain=domain, dns_provider=dns_provider, hosting_provider=hosting_provider, txt_results=txt_results, mta_sts_results=mta_sts_results, mx_results=mx_results, dmarc_results=dmarc_results, dkim_results=dkim_results, spf_results=spf_results, dns_results=dns_results, blocklist_status=blocklist_status, ip_location=ip_location, current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_security=True)
  
 @app.route('/view-profile')
 def view_profile():
@@ -931,7 +941,7 @@ def view_profile():
         'email': user[2]
     }
 
-    return render_template('profile.html', user=user_dict)
+    return render_template('profile.html', user=user_dict, show_navbar=True)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000,debug=True)

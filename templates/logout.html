@@ -1,0 +1,63 @@
+{% extends 'root.html' %}
+
+{% block content %}
+<!-- Trigger the modal immediately when page loads -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+    logoutModal.show();
+  });
+</script>
+
+<!-- Modal Styling -->
+<style>
+  @media (max-width: 576px) {
+    .modal-content {
+      border-radius: 1rem !important;
+    }
+
+    .modal-body p {
+      font-size: 1rem !important;
+    }
+
+    .modal-footer .btn {
+      width: 100%;
+    }
+
+    .modal-footer {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+</style>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-4">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-dark" id="logoutModalLabel">Confirm Logout</h5>
+        <a href="{{ url_for('dashboard') }}" class="btn-close position-absolute top-0 end-0 m-3" aria-label="Close"></a>
+      </div>
+
+      <div class="modal-body text-center text-dark">
+        <p class="fs-5">Are you sure you want to Logout?</p>
+      </div>
+
+      <div class="modal-footer border-0 d-flex justify-content-between">
+        <!-- No, Go Back -->
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary px-4">
+          No, Go Back
+        </a>
+
+        <!-- Logout -->
+        <form method="POST" action="{{ url_for('logout') }}">
+          <button type="submit" class="btn text-white px-4" style="background-color: #0f1557;">
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

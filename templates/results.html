@@ -1,473 +1,208 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Results</title>
+{% extends 'root.html' %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #000000;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            overflow-x: hidden; /* Prevent horizontal scrolling */
-        }
-        .navbar {
-            width: 100%;
-            background-color: #0f1557;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .navbar img {
-            width: 250px; /* Adjust the width as needed */
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 18px;
-        }
-        .navbar a:hover {
-            background-color: #0f1557;
-            border-radius: 4px;
+{% block content %}
+<style>
+    @media (max-width: 576px) {
+        .powered-by h4 {
+            font-size: 1.1rem;
         }
 
-        .container {
-            max-width: 100%;
-            padding: 40px;
-            background-color: #f9f9f9;
-            border-radius: 12px;
-            box-shadow: 0px 0px 20px rgba(199, 118, 118, 0.2);
-            overflow-x: hidden;
-        }
-
-        h1, h2 {
-            text-align: center;
-            color: #0f1557;
-            margin-top: 0;
-            margin-bottom: 5px;
-        }
-
-        h3, h4 {
-            color: #0f1557;
-        }
-
-        h5 {
-            text-align: center;
-            color: #0f1557;
-            margin-top: 0;
-            margin-bottom: 0;
-        }
-
-        .results {
-            margin-top: 30px;
-            border-top: 1px solid #000000;
-            padding-top: 20px;
-        }
-
-        .results h2 {
-            margin-top: 0;
-            color: #000000;
-        }
-
-        .record {
-            margin-bottom: 5px;
-            word-wrap: break-word;
-            color: rgb(0, 0, 0);
-        }
-
-        .item {
-            margin-bottom: 5px;
-            word-wrap: break-word;
-            color: #000000;
-        }
-
-        .parsed-data {
-            color: #000000;
-        }
-
-        .error {
-            color: red;
-        }
-
-        .horizontal-line {
-            border-top: 1px solid #000000;
-            margin: 10px 0;
-        }
-
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .column {
-            flex: 1;
-            padding: 5px;
-            color: #000000;
-        }
-
-        .pass { color: #0f1557; font-weight: bold; }
-        .reject { color: #dc3545; font-weight: bold; }
-        .fail { color: #dc3545; font-weight: bold; }
-        .none { color: #00fdfd; font-weight: bold; }
-        .quarantine { color: #00fdfd; font-weight: bold; }
-
-        .top-left-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .top-right-container {
-            display: flex;
-            align-items: center;
-            gap: 20px; /* Add gap between elements */
-            margin-right: 100px;
-        }
-
-        .export-button {
-            margin-right: 0; /* Remove margin */
-        }
-
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-
-        .dropdown-content a {
-            color: black;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-
-        .dropdown-content a:hover {
-            background-color: #b1b3c4;
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        .dropdown:hover .dropbtn {
-            background-color: #ffffff;
-        }
-
-        .dropbtn {
-            background-color: #ffffff;
-            color: #0f1557;
-            padding: 10px; /* Reduce padding */
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 50%;
-            width: 40px; /* Reduce width */
-            height: 40px; /* Reduce height */
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .powered-by img {
+            max-width: 120px;
         }
 
         .btn {
-            padding: 10px 20px; /* Reduce padding */
-            font-size: 16px; /* Reduce font size */
-            color: #0f1557;
-            background-color: #ffffff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0; /* Remove margin */
-            transition-duration: 0.4s;
+            font-size: 0.95rem;
         }
+    }
+</style>
 
-        .btn:hover {
-            background-color: #b1b3c4;
-            color: #0f1557;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="top-left-container">
-            <a href="https://www.modaexperts.com" target="_blank">
-                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
+<div class="container pt-1 px-1">
+    <!-- Back and Export Buttons -->
+    <div class="mb-2">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <!-- Back Button -->
+            <a href="/" class="btn btn-outline-secondary px-4 py-2">
+                &larr; Back to Search
             </a>
-        </div>
-        <div class="top-right-container">
-            <form action="/generate-pdf" method="POST" class="export-button">
-                <!-- Hidden inputs to pass the data -->
+    
+            <!-- Export Button -->
+            <form action="/generate-pdf" method="POST" class="d-inline">
                 <input type="hidden" name="domain" value="{{ domain }}">
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-file-pdf"></i> Export
+                <button type="submit" class="btn text-white px-4 py-2 shadow-sm" style="background-color: #0f1557; border-color: #0f1557;">
+                    <i class="fas fa-file-pdf me-2"></i> Export
                 </button>
             </form>
-            <div class="dropdown">
-                <button class="dropbtn">P</button>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('view_profile') }}">View Profile</a>
-                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                    <a href="{{ url_for('logout') }}">Logout</a>
-                </div>
-            </div>
         </div>
     </div>
-    <div class="container">
-        <!-- Email Security Results Section -->
-        {% if email_security %}
-            <h1>Email Security Results for</h1>
-            <h1><strong>{{ domain }}</strong></h1>
-            <h2>
-                Powered by 
-                <a href="https://www.modaexperts.com" target="_blank">
-                    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" style="width: 100px; vertical-align: middle;">
-                </a>
-            </h2>
-            <h5>contact@modaexperts.com</h5>
-            <h5>Report generated on: {{ current_datetime }}</h5>
+    
+    
 
-            {% if dns_results %}
-            <div class="results">
-                <h3>Domain IP Addresses</h3>
-                <ul>
-                    {% for result in dns_results %}
-                        <li class="record">{{ result }}</li>
-                    {% endfor %}
-                </ul>
+    {% if email_security %}
+    <div class="text-center mb-1">
+        <h1 class="fw-bold text-dark">Email Security Results for</h1>
+        <h2 class="text-primary">{{ domain }}</h2>
+
+        <div class="d-flex justify-content-center align-items-center gap-3 my-2 powered-by">
+            <h4 class="fw-bold text-dark mb-0">Powered By</h4>
+            <img src="{{ url_for('static', filename='logo_old.jpg') }}" alt="Logo" width="150" class="img-fluid">
+        </div>
+
+        <!-- <p class="mb-0">contact@modaexperts.com</p> -->
+        <small class="text-muted">Report generated on: {{ current_datetime }}</small>
+    </div>
+
+    <!-- Reusable Card Macro -->
+    {% macro render_card(title, items) %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">{{ title }}</h5>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for item in items %}
+                <li class="list-group-item">{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endmacro %}
+
+    <!-- Sections -->
+    {% if dns_results %}{{ render_card('Domain IP Addresses', dns_results) }}{% endif %}
+
+    {% if ip_location %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0">IP Location</h5></div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Country: {{ ip_location.country }}</li>
+            <li class="list-group-item">Region: {{ ip_location.region }}</li>
+            <li class="list-group-item">City: {{ ip_location.city }}</li>
+            <li class="list-group-item">Latitude: {{ ip_location.lat }}</li>
+            <li class="list-group-item">Longitude: {{ ip_location.lon }}</li>
+            <li class="list-group-item">ISP/Organization: {{ ip_location.isp }}</li>
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if blocklist_status %}
+    <!-- Blacklist Section Header -->
+        <div class="card mb-0 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Blacklist Status</h5>
             </div>
-            {% endif %}
+        </div>
 
-            {% if ip_location %}
-            <div class="results">
-                <h3>IP Location</h3>
-                <ul>
-                    <li>Country: {{ ip_location.country }}</li>
-                    <li>Region: {{ ip_location.region }}</li>
-                    <li>City: {{ ip_location.city }}</li>
-                    <li>Latitude: {{ ip_location.lat }}</li>
-                    <li>Longitude: {{ ip_location.lon }}</li>
-                    <li>ISP/Organization: {{ ip_location.isp }}</li>
-                </ul>
-            {% else %}
-                <p>Unable to fetch location details.</p>
-            {% endif %}
+        {% for blocklist in blocklist_status %}
+            <div class="card mb-1 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">IP: {{ blocklist.ip }}</h5>
+                    {% if blocklist.status.error %}
+                        <p class="text-danger">Error: {{ blocklist.status.error }}</p>
+                    {% else %}
+                        <ul class="mb-0">
+                            <li>Confidence of Abuse: {{ blocklist.status.confidence }}%</li>
+                            <li>ISP: {{ blocklist.status.isp }}</li>
+                            <li>Usage Type: {{ blocklist.status.usage_type }}</li>
+                            <li>Hostname: {{ blocklist.status.hostname | join(', ') }}</li>
+                            <li>Domain: {{ blocklist.status.domain }}</li>
+                        </ul>
+                    {% endif %}
+                </div>
             </div>
+        {% endfor %}
+    {% endif %}
 
-            <div class="results">
-                <ul>
-                    {% for ip in resolved_ips %}
-                        <li>{{ ip }}</li>
-                    {% endfor %}
-                </ul>
-            
-                <h3>Blacklist Status</h3>
-                <ul>
-                    {% for blocklist in blocklist_status %}
-                        <li>
-                            <strong>IP:</strong> {{ blocklist.ip }}
-                            {% if blocklist.status.error %}
-                                <p>Error: {{ blocklist.status.error }}</p>
-                            {% else %}
-                                <ul>
-                                    <li>Confidence of Abuse: {{ blocklist.status.confidence }}%</li>
-                                    <li>ISP: {{ blocklist.status.isp }}</li>
-                                    <li>Usage Type: {{ blocklist.status.usage_type }}</li>
-                                    <li>Hostname: {{ blocklist.status.hostname | join(', ') }}</li>
-                                    <li>Domain: {{ blocklist.status.domain }}</li>
-                                </ul>
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
+    {% if hosting_provider %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0">Nameserver</h5></div>
+        <div class="card-body"><p class="mb-0">{{ hosting_provider }}</p></div>
+    </div>
+    {% endif %}
 
-            {% if hosting_provider %}
-            <div class="results">
-                <h3>Nameserver Records</h3>
-                <ul>
-                    <li class="record">{{ hosting_provider }}</li>
-                </ul>
-            </div>
-            {% endif %}
+    {% if dns_provider %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0">DNS Provider</h5></div>
+        <div class="card-body"><p class="mb-0">{{ dns_provider }}</p></div>
+    </div>
+    {% endif %}
 
-            {% if dns_provider %}
-            <div class="results">
-                <h3>DNS Hosting Provider Name</h3>
-                <ul>
-                    <li class="record">{{ dns_provider }}</li>
-                </ul>
-            </div>
-            {% endif %}
+    {% if mx_results %}{{ render_card('MX Records', mx_results) }}{% endif %}
 
-            {% if mx_results %}
-            <div class="results">
-                <h3>MX Records</h3>
-                <ul>
-                    {% for result in mx_results %}
-                        <li class="record">{{ result }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <div class="results">
-                <h3>DMARC Records</h3>
-                {% if dmarc_results %}
-                    <ul>
-                        <h4>DMARC Record Published </h4>
-                        {% for result in dmarc_results %}
-                            <li class="record">{{ result }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="error">No DMARC records found, needs Attention.</p>
-                {% endif %}
-            </div>
-
-            <div class="results">
-                <h3>DKIM Records</h3>
-                {% if dkim_results and dkim_results|length > 0 %}
-                    <ul>
-                        {% for result in dkim_results %}
-                            <li class="record">{{ result }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="error">No DKIM records found, needs Attention.</p>
-                {% endif %}
-            </div>
-
-            <div class="results">
-                <h3>MTA-STS Records</h3>
-                {% if mta_sts_results and mta_sts_results|length > 0 %}
-                    <ul>
-                        {% for result in mta_sts_results %}
-                            <li class="record">{{ result }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="error">No MTA-STS records found, needs Attention.</p>
-                {% endif %}
-            </div>
-
-            {% if spf_results %}
-            <div class="results">
-                <h3>SPF Records</h3>
-                <ul>
-                    {% for result in spf_results %}
-                        <li class="record">{{ result }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-
-            <div class="results">
-                <h3>TXT Records</h3>
-                {% if txt_results and txt_results|length > 0 %}
-                    <ul>
-                        {% for result in txt_results %}
-                            <li class="record">{{ result }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="error">No TXT records found, needs Attention.</p>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        <!-- DMARC Aggregate Report Section -->
-        {% if dmarc_report %}
-            <h1>DMARC Aggregate Report for</h1>
-            <h2>{{ domain }}</h2>
-            <h2>
-                Powered by 
-                <a href="https://www.modaexperts.com" target="_blank">
-                    <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" style="width: 100px; vertical-align: middle;">
-                </a>
-            </h2>
-            <h5>contact@modaexperts.com</h5>
-            <h5>Report generated on: {{ current_datetime }}</h5>
-            <div class="horizontal-line"></div>
-
-            {% if data %}
-                {% for report in data %}
-                    <div class="results">
-                        <h3>Report Date Range:</h3>
-                        <div class="item">
-                            <strong>Begin (UTC):</strong> <span class="parsed-data">{{ report.date_range.begin_gmt }}</span><br><br>
-                            <strong>End (UTC):</strong> <span class="parsed-data">{{ report.date_range.end_gmt }}</span><br><br>
-                            <strong>Begin (EST):</strong> <span class="parsed-data">{{ report.date_range.begin }}</span><br><br>
-                            <strong>End (EST):</strong> <span class="parsed-data">{{ report.date_range.end }}</span>
-                        </div>
-                        <div class="horizontal-line"></div>
-
-                        <div class="item"><strong>Reporting Organization:</strong> <span class="parsed-data">{{ report.reporting_org or 'None' }}</span></div>
-
-                        <h3>Source IP Details:</h3>
-                        {% for source_ip in report.source_ips %}
-                            <div class="two-column">
-                                <div class="column">
-                                    <strong>Source IP:</strong> <span class="parsed-data">{{ source_ip.source_ip }}</span><br><br>
-                                    <strong>Disposition:</strong> 
-                                    <span class="{% if source_ip.disposition == 'pass' %}pass{% elif source_ip.disposition == 'reject' %}reject{% elif source_ip.disposition == 'fail' %}fail{% elif source_ip.disposition == 'quarantine' %}quarantine{% else %}none{% endif %}">
-                                        {{ source_ip.disposition }}
-                                    </span><br><br>
-                                    <strong>DKIM Aligned:</strong> 
-                                    <span class="{% if source_ip.dkim_aligned == 'pass' %}pass{% elif source_ip.dkim_aligned == 'fail' %}fail{% else %}none{% endif %}">
-                                        {{ source_ip.dkim_aligned }}
-                                    </span><br><br>
-                                    
-                                    <strong>SPF Aligned:</strong> 
-                                    <span class="{% if source_ip.spf_aligned == 'pass' %}pass{% elif source_ip.spf_aligned == 'fail' %}fail{% else %}none{% endif %}">
-                                        {{ source_ip.spf_aligned }}
-                                    </span><br><br>                                                                  
-                                    <strong>SPF Domain:</strong> <span class="parsed-data">{{ source_ip.spf_domain }}</span><br><br>
-                                </div>
-                                <div class="column">
-                                    <strong>SPF Scope:</strong> 
-                                    <span class="{% if source_ip.spf_scope == 'pass' %}pass{% elif source_ip.spf_scope == 'reject' %}reject{% elif source_ip.spf_scope == 'fail' %}fail{% elif source_ip.spf_scope == 'quarantine' %}quarantine{% else %}none{% endif %}">
-                                        {{ source_ip.spf_scope }}
-                                    </span><br><br>
-                                    <strong>SPF Authenticated:</strong> 
-                                    <span class="{% if source_ip.spf_authenticated == 'pass' %}pass{% elif source_ip.spf_authenticated == 'reject' %}reject{% elif source_ip.spf_authenticated == 'fail' %}fail{% elif source_ip.spf_authenticated == 'quarantine' %}quarantine{% else %}none{% endif %}">
-                                        {{ source_ip.spf_authenticated }}
-                                    </span><br><br>
-                                    <strong>DKIM Domain:</strong> <span class="parsed-data">{{ source_ip.dkim_domain }}</span><br><br>
-                                    <strong>DKIM Selector:</strong> <span class="parsed-data">{{ source_ip.dkim_selector }}</span><br><br>
-                                    <strong>DKIM Authenticated:</strong> 
-                                    <span class="{% if source_ip.dkim_authenticated == 'pass' %}pass{% else %}none{% endif %}">
-                                        {{ source_ip.dkim_authenticated }}
-                                    </span><br>
-                                </div>
-                            </div>
-                            <hr style="border-color: #444444;">
-                        {% endfor %}
-                    </div>
+    <!-- DMARC -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0">DMARC Records</h5></div>
+        <ul class="list-group list-group-flush">
+            {% if dmarc_results %}
+                {% for item in dmarc_results %}
+                    <li class="list-group-item">{{ item }}</li>
                 {% endfor %}
             {% else %}
-                <p class="error">No DMARC report data found or parsing error.</p>
+                <li class="list-group-item fw-bold" style="color: #ff0000;">No DMARC records found, needs attention</li>
             {% endif %}
-        {% else %}
-            <p class="error"></p>
-        {% endif %}
+        </ul>
     </div>
-</body>
-</html>
+
+    <!-- DKIM -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0">DKIM Records</h5></div>
+        <ul class="list-group list-group-flush">
+            {% if dkim_results %}
+                {% for item in dkim_results %}
+                    <li class="list-group-item">{{ item }}</li>
+                {% endfor %}
+            {% else %}
+                <li class="list-group-item fw-bold" style="color: #ff0000;">No DKIM records found, needs Attention.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    {% if mta_sts_results %}
+        {{ render_card('MTA-STS Records', mta_sts_results) }}
+    {% else %}
+        <p class="text-danger">No MTA-STS records found.</p>
+    {% endif %}
+
+    {% if spf_results %}{{ render_card('SPF Records', spf_results) }}{% endif %}
+    {% if txt_results %}{{ render_card('TXT Records', txt_results) }}{% else %}<p class="text-danger">No TXT records found.</p>{% endif %}
+
+    {% endif %}
+
+    <!-- DMARC Aggregate Report -->
+    {% if dmarc_report and data %}
+    <div class="mt-5">
+        <h2 class="text-center bg-dark text-white py-2">DMARC Aggregate Report for {{ domain }}</h2>
+        {% for report in data %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Report Date Range</h5>
+                <p><strong>Begin (UTC):</strong> {{ report.date_range.begin_gmt }}</p>
+                <p><strong>End (UTC):</strong> {{ report.date_range.end_gmt }}</p>
+                <p><strong>Begin (EST):</strong> {{ report.date_range.begin }}</p>
+                <p class="mb-3"><strong>End (EST):</strong> {{ report.date_range.end }}</p>
+                <p><strong>Reporting Organization:</strong> {{ report.reporting_org or 'None' }}</p>
+
+                <h6 class="text-dark">Source IP Details</h6>
+                {% for source_ip in report.source_ips %}
+                <div class="row border-top pt-3">
+                    <div class="col-md-6">
+                        <p><strong>Source IP:</strong> {{ source_ip.source_ip }}</p>
+                        <p><strong>Disposition:</strong> <span class="badge bg-success">{{ source_ip.disposition }}</span></p>
+                        <p><strong>DKIM Aligned:</strong> <span class="badge bg-info">{{ source_ip.dkim_aligned }}</span></p>
+                        <p><strong>SPF Aligned:</strong> <span class="badge bg-info">{{ source_ip.spf_aligned }}</span></p>
+                        <p><strong>SPF Domain:</strong> {{ source_ip.spf_domain }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>SPF Scope:</strong> {{ source_ip.spf_scope }}</p>
+                        <p><strong>SPF Authenticated:</strong> {{ source_ip.spf_authenticated }}</p>
+                        <p><strong>DKIM Domain:</strong> {{ source_ip.dkim_domain }}</p>
+                        <p><strong>DKIM Selector:</strong> {{ source_ip.dkim_selector }}</p>
+                        <p><strong>DKIM Authenticated:</strong> {{ source_ip.dkim_authenticated }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
