@@ -1,165 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #ffffff;
-        }
-        .navbar {
-            width: 100%;
-            background-color: #0f1557;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            position: absolute;
-            top: 0;
-        }
-        .navbar img {
-            width: 250px; /* Adjust the width as needed */
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 18px;
+{% extends 'root.html' %}
+
+{% block content %}
+<style>
+    .login-container {
+        min-height: calc(100vh - 100px); /* Adjust based on navbar height */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        .card h2 {
+            font-size: 1.5rem;
         }
 
-        .container {
-            width: 400px;
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            /* text-align: center; */
-            margin-top: 80px; /* Adjusted to account for the navbar height */
+        .card {
+            padding: 1.5rem !important;
         }
-        h2 {
-            text-align: center;
-            color: #0f1557;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #0f1557;
-        }
-        input[type="email"], input[type="password"] {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #000000;
-            border-radius: 4px;
-        }
-        button[type="submit"] {
-            padding: 10px;
-            font-size: 16px;
-            background-color: #0f1557;
-            color: #ffffff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #b1b3c4;
-        }
-        .signup-link {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.9em;
-            color: #0f1557;
-        }
-        .signup-link a {
-            color: #00d1ff;
-            text-decoration: none;
-        }
-        .signup-link a:hover {
-            text-decoration: underline;
-        }
-        .small-text {
-            font-size: 0.9em;
-            font-style: italic;
-            color: #0f1557;
-            margin-top: 15px;
-            margin-bottom: 10px;
-        }
-        /* Flash Messages */
-        .flash-messages {
-            list-style: none;
-            padding: 10px;
-            text-align: center;
-        }
-        .flash-messages li {
-            padding: 8px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-        .success {
-            background-color: #28a745; /* Green */
-            color: white;
-        }
-        .danger {
-            background-color: #dc3545; /* Red */
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="top-left-container">
-            <a href="https://www.modaexperts.com" target="_blank">
-                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
-            </a>
-        </div>
-        <div class="top-right-container">
 
-        </div>
-    </div>
-    <div class="container">
-        <h2>Sign In To Your Account</h2>
+        .btn {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <div class="card shadow p-4 w-100" style="max-width: 400px; border-radius: 12px;">
+        <h2 class="text-center mb-4 fw-bold" style="color: #0f1557;">Sign In To Your Account</h2>
 
         <!-- Flash Messages for Success/Error -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <ul class="flash-messages">
+        <ul class="flash-messages list-unstyled text-center">
             {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
+            <li class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ message }}</li>
             {% endfor %}
         </ul>
         {% endif %}
         {% endwith %}
 
         <form method="POST" action="/login">
-            <label for="email_login">Email:</label>
-            <input type="email" id="email_login" name="email_login" required>
-        
-            <label for="password_login">Password:</label>
-            <input type="password" id="password_login" name="password_login" required>
-        
-            <button type="submit">Login</button>
-        </form>
-        
+            <div class="mb-3">
+                <label for="email_login" class="form-label fw-bold text-dark">Email</label>
+                <input type="email" class="form-control border-dark" id="email_login" name="email_login" required>
+            </div>
 
-        <div class="small-text">
-            Don't have an account? 
-            <a href="{{ url_for('signup') }}" style="color: #0f1557; font-weight: bold; text-decoration: none;">
+            <div class="mb-3">
+                <label for="password_login" class="form-label fw-bold text-dark">Password</label>
+                <div class="input-group">
+                    <input type="password" class="form-control border-dark" id="password_login" name="password_login" required>
+                    <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()" tabindex="-1">
+                        <i class="fa fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn w-100 text-white fw-semibold" style="background-color: #0f1557;">
+                Login
+            </button>
+        </form>
+
+        <p class="text-center mt-3 fst-italic text-dark">
+            Don't have an account?
+            <a href="{{ url_for('signup') }}" class="fw-bold text-decoration-none" style="color: #0f1557;">
                 Create Account!
             </a>
-        </div>        
+        </p>
     </div>
-</body>
-</html>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById("password_login");
+        const icon = document.getElementById("toggleIcon");
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            passwordInput.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+</script>
+{% endblock %}

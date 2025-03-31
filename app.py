@@ -1,4 +1,4 @@
-import shutil
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from functools import wraps
 from dns import resolver
@@ -6,7 +6,6 @@ from io import BytesIO
 import pdfkit
 import dns.resolver
 import logging
-import os
 from lxml import etree
 from datetime import datetime, timezone, timedelta
 import pytz
@@ -37,6 +36,11 @@ app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=25)
+
+@app.context_processor
+def inject_request():
+    return dict(request=request)
+
 
 @app.before_request
 def make_session_permanent():
@@ -123,7 +127,7 @@ def signup():
             flash(f"Database error: {str(e)}", "danger")
             return render_template('signup.html')
 
-    return render_template('signup.html')
+    return render_template('signup.html', show_navbar=False)
 
 def login_required(f):
     @wraps(f)
@@ -165,7 +169,7 @@ def login():
 
         flash("Invalid email or password", "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", show_navbar=True)
 
 # Admin route to approve users
 @app.route('/admin/users')
@@ -212,7 +216,10 @@ logging.basicConfig(level=logging.DEBUG)
 current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 # Azure Blob Storage configuration
-AZURE_CONNECTION_STRING = 'DefaultEndpointsProtocol=https;AccountName=dnsanddmarcsg;AccountKey=1/qyAU9++aFoYCDfwcHxBkMSe4+bJmqL74RzE9Gruri/M4Vz/HxKo/zDVGPjVG47jwPMrd891tho+ASt7kHlGg==;EndpointSuffix=core.windows.net'
+AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
+if not AZURE_CONNECTION_STRING:
+    raise ValueError("AZURE_CONNECTION_STRING environment variable not set.")
+
 CONTAINER_NAME = 'xmlzipfiles'
 blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
 
@@ -430,15 +437,19 @@ def view_report(blob_name):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html')
+    return render_template('index.html', show_navbar=True)
 
 # Default Route
 @app.route('/')
 def default():
     return redirect(url_for('login'))
 
+@app.route('/logout-confirm')
+def logout_confirm():
+    return render_template('logout.html')
+
 # Route for logout
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     """Clear session and log out the user."""
     session.clear()
@@ -931,7 +942,143 @@ def view_profile():
         'email': user[2]
     }
 
-    return render_template('profile.html', user=user_dict)
+    return render_template('profile.html', user=user_dict, show_navbar=True)
+
+@app.route('/add_domain', methods=['GET', 'POST'])
+@login_required
+def add_domain():
+    if request.method == 'POST':
+        domain_name = request.form.get('domain_name')
+        user_id = session['user_id']
+
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO domains (user_id, domain_name) VALUES (?, ?)", (user_id, domain_name))
+        db.commit()
+        cursor.close()
+        db.close()
+
+        flash("Domain added successfully.", "success")
+        return redirect(url_for('view_domains'))
+
+    return render_template('add_domain.html')
+
+@app.route('/view_domains')
+@login_required
+def view_domains():
+    user_id = session['user_id']
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
+    domains = cursor.fetchall()
+    cursor.close()
+    db.close()
+
+    return render_template('view_domains.html', domains=domains)
+
+import requests
+
+@app.route('/website-scan', methods=['POST'])
+@login_required
+def website_scan():
+    website = request.form.get('website')
+    if not website:
+        flash("Please enter a website to scan.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # Burp Suite REST API configuration
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"  # Update with your Burp API URL
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        # Add configuration type to the scan data
+        scan_data = {
+            "urls": [website],  # The target website
+            "configuration": "audit-passive"  # Set the configuration type here
+        }
+
+        # Send the POST request to start the scan
+        response = requests.post(f"{BURP_API_URL}/scan", json=scan_data, headers=headers)
+
+        # Log the response for debugging
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {response.headers}")
+        print(f"Response body: {response.text}")
+
+        if response.status_code == 201:  # Scan created successfully
+            # Extract the scan_id from the Location header
+            location_header = response.headers.get("Location")
+            if location_header:
+                scan_id = location_header.split("/")[-1]  # Extract the last part of the URL
+                flash(f"Scan started for website '{website}'. Scan ID: {scan_id}", "success")
+                return redirect(url_for('scan_status', scan_id=scan_id))
+            else:
+                flash("Scan started, but no scan ID was returned in the response.", "warning")
+        else:
+            flash(f"Failed to start scan: {response.text}", "danger")
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/scan-results/<int:scan_id>', methods=['GET'])
+@login_required
+def scan_results(scan_id):
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        response = requests.get(f"{BURP_API_URL}/scan/{scan_id}", headers=headers)
+
+        if response.status_code == 200:
+            scan_data = response.json()
+            issues = scan_data.get("issue_events", [])
+            if not issues:
+                flash("No issues were found for this scan.", "info")
+            return render_template('scan_results.html', scan_id=scan_id, issues=issues)
+        
+        elif response.status_code == 500:
+            flash("An internal server error occurred while fetching scan results. Please check Burp Suite logs.", "danger")
+        
+        else:
+            print(f"Failed to fetch scan results: {response.status_code} - {response.text}")
+            flash(f"Failed to fetch scan results: {response.text}", "danger")
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+        print(f"Error: {e}")
+
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/scan-status/<int:scan_id>', methods=['GET'])
+@login_required
+def scan_status(scan_id):
+    BURP_API_URL = "http://172.16.2.163:1337/v0.1/"
+    BURP_API_KEY = "sZ2BIwMzQcZ9Nhr55CKZJwv2VUoRNmd0"  # Replace with your actual API key
+
+    try:
+        headers = {"Authorization": f"Bearer {BURP_API_KEY}"}
+        response = requests.get(f"{BURP_API_URL}/scan/{scan_id}", headers=headers)
+
+        if response.status_code == 200:
+            scan_data = response.json()
+            # Add a default value for issue_counts if it doesn't exist
+            if 'issue_counts' not in scan_data:
+                scan_data['issue_counts'] = {'total': 'Not available yet'}
+            print(f"Scan Status: {scan_data}")
+            return render_template('scan_status.html', scan_data=scan_data)
+        else:
+            flash(f"Failed to fetch scan status: {response.text}", "danger")
+            return redirect(url_for('dashboard'))
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error connecting to Burp Suite API: {str(e)}", "danger")
+        return redirect(url_for('dashboard'))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=5000,debug=True)

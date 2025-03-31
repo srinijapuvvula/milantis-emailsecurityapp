@@ -1,168 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #ffffff;
-        }
-        .navbar {
-            width: 100%;
-            background-color: #0f1557;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            position: absolute;
-            top: 0;
-        }
-        .navbar img {
-            width: 250px; /* Adjust the width as needed */
-        }
-        .navbar a {
-            color: #0f1557;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 18px;
-        }
+{% extends 'root.html' %}
 
-        .container {
-            width: 50%;
-            background: #ffffff;
-            border-radius: 10px;
-            display: flex;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 30%;
-            max-width: 1400px;
-            /* overflow: hidden; */
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #0f1557;
-        }
-        h2 {
-            margin-top: 5px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            color: #0f1557;
-        }
-        input[type="text"], input[type="email"], input[type="password"] {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #000000;
-            border-radius: 4px;
-        }
+{% block content %}
+<style>
+  .signup-wrapper {
+    max-width: 1000px;
+    margin: auto;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
 
-        button[type="submit"] {
-            padding: 7px 20px;
-            font-size: 18px;
-            background-color: #0f1557;
-            color: #ffffff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #b1b3c4;
-        }
-        .message {
-            text-align: center;
-            color: #b1b3c4;
-            font-weight: bold;
-            margin-top: 15px;
-        }
-        .consent {
-            font-size: 0.7em;
-            font-style: italic;
-            color: #000000;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .panel {
-            flex: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .panel.login {
-            border-right: 1px solid #0f1557;
-        }
-        .small-text {
-            font-size: 0.9em;
-            font-style: italic;
-            color: #000000;
-            margin-top: 15px;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <div class="top-left-container">
-            <a href="https://www.modaexperts.com" target="_blank">
-                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo">
-            </a>
-        </div>
-        <div class="top-right-container">
-            <!-- <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a> -->
-        </div>
+  .signup-left,
+  .signup-right {
+    width: 50%;
+  }
+
+  .signup-left {
+    background-color: #f8f9fa;
+  }
+
+  .signup-logo {
+    max-width: 240px;
+  }
+
+  .signup-form {
+  padding: 2rem 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .signup-wrapper {
+      flex-direction: column;
+      min-height: auto;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .signup-left,
+    .signup-right {
+      width: 100%;
+    }
+
+    .signup-form {
+      padding: 1.5rem;
+    }
+
+    .signup-logo {
+      max-width: 180px;
+    }
+  }
+</style>
+
+<div class="vh-100 overflow-hidden d-flex justify-content-center align-items-center px-3">
+  <div class="d-flex flex-column flex-md-row signup-wrapper">
+
+    <!-- Left Side (Logo) -->
+    <div class="col-md-6 bg-light d-flex justify-content-center align-items-center p-4">
+      <a href="https://www.modaexperts.com" target="_blank" rel="noopener noreferrer">
+        <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo" class="img-fluid"
+          style="max-width: 300px; filter: brightness(0) saturate(100%) invert(12%) sepia(99%) saturate(752%) hue-rotate(199deg) brightness(96%) contrast(104%);">
+      </a>
     </div>
-    <div class="container">
-        <div class="panel signup">
-            <h2>Create Your Account</h2>
 
-            <form method="POST">
-                <!-- Signup Form Fields -->
-                <label for="first_name">First Name</label>
-                <input type="text" id="first_name" name="first_name" required>
-            
-                <label for="last_name">Last Name</label>
-                <input type="text" id="last_name" name="last_name" required>
-            
-                <label for="email_signup">Email</label>
-                <input type="email" id="email_signup" name="email_signup" required>
-            
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" 
-                        required 
-                        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}" 
-                        title="Password must be at least 8 characters long, contain one uppercase letter, one number, and one special character">
+    <!-- Right Side (Signup Form) -->
+    <div class="signup-right bg-white d-flex flex-column justify-content-center signup-form">
+      <h6 class="text-center text-muted mb-1">Please register if you do not have an account</h6>
+      <h2 class="text-center fw-bold mb-3">Signup</h2>
 
-                <div class="consent">
-                    By continuing, you agree to the <strong>application's</strong> 
-                    <a href="/terms" target="_blank">Terms of Use</a> and 
-                    <a href="/privacy" target="_blank">Privacy Policy</a>. 
-                    By continuing, you consent to this application processing the domain and email information you provide for DNS and DMARC security checks. We may store logs for diagnostic and security purposes and notify you about updates, insights, or improvements to our services.
-                </div>
-            
-                <button type="submit">Sign Up</button>
-                {% if success %}
-                <div class="message">Thanks for registering! Our team will review and will notify you via email.</div>
-                {% endif %}
-            </form>
-            
-            <div class="small-text">
-                Already have an account? <a href="/login" style="color: #0f1557; font-weight: bold; text-decoration: none;">Login!</a>
-            </div>
+      <form method="POST">
+        <div class="mb-2">
+          <label for="first_name" class="form-label">First Name</label>
+          <input type="text" class="form-control form-control-sm" id="first_name" name="first_name" required>
         </div>
+
+        <div class="mb-2">
+          <label for="last_name" class="form-label">Last Name</label>
+          <input type="text" class="form-control form-control-sm" id="last_name" name="last_name" required>
+        </div>
+
+        <div class="mb-2">
+          <label for="email_signup" class="form-label">Email</label>
+          <input type="email" class="form-control form-control-sm" id="email_signup" name="email_signup" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" class="form-control form-control-sm" id="password" name="password"
+            required
+            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}"
+            title="Password must be at least 8 characters long, contain one uppercase letter, one number, and one special character">
+        </div>
+
+        <p class="small text-muted mb-3">
+          By continuing, you agree to the
+          <a href="/terms" target="_blank">Terms of Use</a> and
+          <a href="/privacy" target="_blank">Privacy Policy</a>.
+        </p>
+
+        <div class="d-grid">
+          <button type="submit" class="btn text-white fw-semibold py-2" style="background-color: #0f1557;">Sign Up</button>
+        </div>
+
+        {% if success %}
+        <div class="alert alert-success mt-3 py-2 px-3" role="alert">
+          Thanks for registering! Our team will review and notify you via email.
+        </div>
+        {% endif %}
+      </form>
+
+      <p class="text-center small mt-3 mb-0">
+        Already have an account?
+        <a href="/login" class="fw-bold text-decoration-none" style="color: #0f1557;">Login!</a>
+      </p>
     </div>
-</body>
-</html>
+
+  </div>
+</div>
+{% endblock %}
