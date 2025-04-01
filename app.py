@@ -153,7 +153,7 @@ def login():
 
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT id, password, is_approved FROM users WHERE email=?", (email,))
+        cursor.execute("SELECT user_id, password, is_approved FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
         db.close()
@@ -181,7 +181,7 @@ def admin_users():
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT id, first_name, last_name, email, is_approved FROM users ORDER BY id DESC")
+    cursor.execute("SELECT user_id, first_name, last_name, email, is_approved FROM users ORDER BY id DESC")
     users = cursor.fetchall()
     cursor.close()
     db.close()
@@ -199,7 +199,7 @@ def approve_user(user_id):
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("UPDATE users SET is_approved = ? WHERE id = ?", (approve, user_id))
+    cursor.execute("UPDATE users SET is_approved = ? WHERE user_id = ?", (approve, user_id))
     db.commit()
     cursor.close()
     db.close()
@@ -926,7 +926,7 @@ def view_profile():
     user_id = session['user_id']
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT first_name, last_name, email FROM users WHERE id=?", (user_id,))
+    cursor.execute("SELECT first_name, last_name, email FROM users WHERE user_id=?", (user_id,))
     user = cursor.fetchone()
     cursor.close()
     db.close()
@@ -970,7 +970,7 @@ def view_domains():
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
+    cursor.execute("SELECT user_id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
     domains = cursor.fetchall()
     cursor.close()
     db.close()
