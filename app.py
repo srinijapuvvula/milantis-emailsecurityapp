@@ -1,4 +1,5 @@
 import os
+import shutil
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from functools import wraps
 from dns import resolver
@@ -88,7 +89,40 @@ def is_password_secure(password):
     pattern = r"^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
     return bool(re.match(pattern, password))
 
-# Signup Route
+# 🔍 Extract DMARC policy (quarantine/reject/none)
+def get_dmarc_policy(record):
+    match = re.search(r"\bp=([a-zA-Z]+)", record, re.IGNORECASE)
+    return match.group(1).lower() if match else None
+
+def dns_record_exists(name, record_type='TXT'):
+    try:
+        dns.resolver.resolve(name, record_type)
+        return True
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout):
+        return False
+
+def check_dmarc_aligned(domain):
+    dmarc_present = dns_record_exists(f"_dmarc.{domain}", "TXT")
+
+    # Try common DKIM selectors
+    possible_selectors = ["default", "selector1", "google", "mail", "d365"]
+    dkim_configured = any(
+        dns_record_exists(f"{selector}._domainkey.{domain}", "TXT")
+        for selector in possible_selectors
+    )
+
+    mta_sts_txt = dns_record_exists(f"_mta-sts.{domain}", "TXT")
+    mta_sts_policy = dns_record_exists(f"mta-sts.{domain}", "A")
+
+    if dmarc_present and (dkim_configured or (mta_sts_txt and mta_sts_policy)):
+        print(f"✅ Alignment: DMARC + {'DKIM' if dkim_configured else 'MTA-STS'}")
+        return "yes"
+
+    print("❌ Alignment: Incomplete - requires DMARC + (DKIM or MTA-STS)")
+    return "no"
+
+
+# 🚀 Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -97,13 +131,13 @@ def signup():
         email = request.form.get('email_signup')
         password = request.form.get('password')
 
-        # Check password security
+        # ✅ Password validation
         if not is_password_secure(password):
             flash("Password must contain at least 8 characters, 1 uppercase, 1 number, and 1 special character.", "danger")
             return render_template('signup.html')
-        
-        # Hash the password securely
+
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        domain = email.split('@')[-1]
 
         db = get_db_connection()
         if db is None:
@@ -112,10 +146,75 @@ def signup():
 
         try:
             cursor = db.cursor()
-            cursor.execute(
-                "INSERT INTO users (first_name, last_name, email, password, is_approved) VALUES (?, ?, ?, ?, ?)",
-                (first_name, last_name, email, hashed_password, False)
-            )
+
+            # Insert user and get user_id
+            cursor.execute("""
+                INSERT INTO users (first_name, last_name, email, password, is_approved)
+                OUTPUT INSERTED.user_id
+                VALUES (?, ?, ?, ?, ?)
+            """, (first_name, last_name, email, hashed_password, False))
+            user_id = cursor.fetchone()[0]
+
+            # Check or insert domain
+            cursor.execute("SELECT domain_id FROM domains WHERE domain_name = ?", (domain,))
+            domain_row = cursor.fetchone()
+
+            if domain_row:
+                domain_id = domain_row[0]
+            else:
+                cursor.execute("""
+                    INSERT INTO domains (user_id, domain_name)
+                    OUTPUT INSERTED.domain_id
+                    VALUES (?, ?)
+                """, (user_id, domain))
+                domain_id = cursor.fetchone()[0]
+
+            # ✅ DMARC CONFIGURED CHECK
+            dmarc_record = dmarc_lookup(domain)
+            record_text = " ".join(dmarc_record) if isinstance(dmarc_record, list) else dmarc_record
+            print(f"🔍 DMARC record for {domain}: {record_text}")
+
+            reporting_address_present = "dmarc-in@milantis.net" in record_text.lower()
+            policy = get_dmarc_policy(record_text)
+            policy_enforced = policy in ["quarantine", "reject"]
+            print(f"🧩 DMARC policy extracted: {policy}")
+
+            if record_text and reporting_address_present and policy_enforced:
+                dmarc_configured = "yes"
+                print(f"✅ DMARC record includes reporting address and policy '{policy}'. Marking dmarc_configured = 'yes'")
+            else:
+                dmarc_configured = "no"
+                if not record_text:
+                    print(f"⚠️ No DMARC record found for {domain}. Marking dmarc_configured = 'no'")
+                else:
+                    if not reporting_address_present:
+                        print(f"⚠️ DMARC record missing 'dmarc-in@milantis.net'")
+                    if not policy_enforced:
+                        print(f"⚠️ DMARC policy is '{policy}' — enforcement not enabled")
+                    print(f"⚠️ Marking dmarc_configured = 'no'")
+
+            # ✅ DMARC ALIGNED CHECK
+            dmarc_aligned = check_dmarc_aligned(domain)
+            print(f"🔐 DMARC aligned for {domain}: {dmarc_aligned}")
+
+            last_checked_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # ✅ UPSERT into dmarc_info table
+            cursor.execute("SELECT dmarc_info_id FROM dmarc_info WHERE domain_id = ?", (domain_id,))
+            dmarc_info_row = cursor.fetchone()
+
+            if dmarc_info_row:
+                cursor.execute("""
+                    UPDATE dmarc_info
+                    SET dmarc_aligned = ?, dmarc_configured = ?, last_checked_at = ?, domain_name = ?
+                    WHERE domain_id = ?
+                """, (dmarc_aligned, dmarc_configured, last_checked_at, domain, domain_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO dmarc_info (domain_id, domain_name, dmarc_aligned, dmarc_configured, last_checked_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (domain_id, domain, dmarc_aligned, dmarc_configured, last_checked_at))
+
             db.commit()
             cursor.close()
             db.close()
@@ -123,8 +222,10 @@ def signup():
             flash("Registration successful. Waiting for approval.", "success")
             return redirect('/login')
 
-        except Exception as e:  # Catch all exceptions
-            flash(f"Database error: {str(e)}", "danger")
+        except Exception as e:
+            db.rollback()
+            print(f"❌ Error during signup: {e}")
+            flash("Something went wrong. Please try again.", "danger")
             return render_template('signup.html')
 
     return render_template('signup.html', show_navbar=False)
@@ -153,7 +254,7 @@ def login():
 
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT id, password, is_approved FROM users WHERE email=?", (email,))
+        cursor.execute("SELECT user_id, password, is_approved FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
         db.close()
@@ -181,7 +282,7 @@ def admin_users():
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT id, first_name, last_name, email, is_approved FROM users ORDER BY id DESC")
+    cursor.execute("SELECT user_id, first_name, last_name, email, is_approved FROM users ORDER BY user_id DESC")
     users = cursor.fetchall()
     cursor.close()
     db.close()
@@ -199,7 +300,7 @@ def approve_user(user_id):
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("UPDATE users SET is_approved = ? WHERE id = ?", (approve, user_id))
+    cursor.execute("UPDATE users SET is_approved = ? WHERE user_id = ?", (approve, user_id))
     db.commit()
     cursor.close()
     db.close()
@@ -926,7 +1027,7 @@ def view_profile():
     user_id = session['user_id']
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT first_name, last_name, email FROM users WHERE id=?", (user_id,))
+    cursor.execute("SELECT first_name, last_name, email FROM users WHERE user_id=?", (user_id,))
     user = cursor.fetchone()
     cursor.close()
     db.close()
@@ -970,7 +1071,7 @@ def view_domains():
 
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("SELECT id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
+    cursor.execute("SELECT user_id, domain_name, created_at, last_scanned_at, scan_status, report_path, is_active FROM domains WHERE user_id=?", (user_id,))
     domains = cursor.fetchall()
     cursor.close()
     db.close()
