@@ -169,7 +169,13 @@
     <!-- DMARC Aggregate Report -->
     {% if dmarc_report and data %}
     <div class="mt-5">
-        <h2 class="text-center bg-dark text-white py-2">DMARC Aggregate Report for {{ domain }}</h2>
+        {% for report in data %}
+        <h2 class="text-center bg-dark text-white py-2">DMARC Aggregate Report for {{ report.source_ips[0].dkim_domain }}</h2>
+        {% for source_ip in report.source_ips %}
+          <!-- Your source IP details go here -->
+        {% endfor %}
+        {% endfor %}
+      
         {% for report in data %}
         <div class="card shadow-sm mb-4">
             <div class="card-body">
