@@ -94,34 +94,6 @@ def get_dmarc_policy(record):
     match = re.search(r"\bp=([a-zA-Z]+)", record, re.IGNORECASE)
     return match.group(1).lower() if match else None
 
-def dns_record_exists(name, record_type='TXT'):
-    try:
-        dns.resolver.resolve(name, record_type)
-        return True
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout):
-        return False
-
-def check_dmarc_aligned(domain):
-    dmarc_present = dns_record_exists(f"_dmarc.{domain}", "TXT")
-
-    # Try common DKIM selectors
-    possible_selectors = ["default", "selector1", "google", "mail", "d365"]
-    dkim_configured = any(
-        dns_record_exists(f"{selector}._domainkey.{domain}", "TXT")
-        for selector in possible_selectors
-    )
-
-    mta_sts_txt = dns_record_exists(f"_mta-sts.{domain}", "TXT")
-    mta_sts_policy = dns_record_exists(f"mta-sts.{domain}", "A")
-
-    if dmarc_present and (dkim_configured or (mta_sts_txt and mta_sts_policy)):
-        print(f"✅ Alignment: DMARC + {'DKIM' if dkim_configured else 'MTA-STS'}")
-        return "yes"
-
-    print("❌ Alignment: Incomplete - requires DMARC + (DKIM or MTA-STS)")
-    return "no"
-
-
 # 🚀 Signup Route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -169,52 +141,6 @@ def signup():
                 """, (user_id, domain))
                 domain_id = cursor.fetchone()[0]
 
-            # ✅ DMARC CONFIGURED CHECK
-            dmarc_record = dmarc_lookup(domain)
-            record_text = " ".join(dmarc_record) if isinstance(dmarc_record, list) else dmarc_record
-            print(f"🔍 DMARC record for {domain}: {record_text}")
-
-            reporting_address_present = "dmarc-in@milantis.net" in record_text.lower()
-            policy = get_dmarc_policy(record_text)
-            policy_enforced = policy in ["quarantine", "reject"]
-            print(f"🧩 DMARC policy extracted: {policy}")
-
-            if record_text and reporting_address_present and policy_enforced:
-                dmarc_configured = "yes"
-                print(f"✅ DMARC record includes reporting address and policy '{policy}'. Marking dmarc_configured = 'yes'")
-            else:
-                dmarc_configured = "no"
-                if not record_text:
-                    print(f"⚠️ No DMARC record found for {domain}. Marking dmarc_configured = 'no'")
-                else:
-                    if not reporting_address_present:
-                        print(f"⚠️ DMARC record missing 'dmarc-in@milantis.net'")
-                    if not policy_enforced:
-                        print(f"⚠️ DMARC policy is '{policy}' — enforcement not enabled")
-                    print(f"⚠️ Marking dmarc_configured = 'no'")
-
-            # ✅ DMARC ALIGNED CHECK
-            dmarc_aligned = check_dmarc_aligned(domain)
-            print(f"🔐 DMARC aligned for {domain}: {dmarc_aligned}")
-
-            last_checked_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            # ✅ UPSERT into dmarc_info table
-            cursor.execute("SELECT dmarc_info_id FROM dmarc_info WHERE domain_id = ?", (domain_id,))
-            dmarc_info_row = cursor.fetchone()
-
-            if dmarc_info_row:
-                cursor.execute("""
-                    UPDATE dmarc_info
-                    SET dmarc_aligned = ?, dmarc_configured = ?, last_checked_at = ?, domain_name = ?
-                    WHERE domain_id = ?
-                """, (dmarc_aligned, dmarc_configured, last_checked_at, domain, domain_id))
-            else:
-                cursor.execute("""
-                    INSERT INTO dmarc_info (domain_id, domain_name, dmarc_aligned, dmarc_configured, last_checked_at)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (domain_id, domain, dmarc_aligned, dmarc_configured, last_checked_at))
-
             db.commit()
             cursor.close()
             db.close()
@@ -253,22 +179,30 @@ def login():
             return render_template("login.html")
 
         db = get_db_connection()
-        cursor = db.cursor()
-        cursor.execute("SELECT user_id, password, is_approved FROM users WHERE email=?", (email,))
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
+        if db is None:
+            flash("Database connection failed. Please try again later.", "danger")
+            return render_template("login.html")
 
-        if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
-            if not user[2]:  # Check if the user is approved
-                flash("Account pending approval.", "danger")
-                return render_template("login.html")
-            session["user_id"] = user[0]
-            session["email"] = email
-            session['last_activity'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            return redirect("/dashboard")
+        try:
+            cursor = db.cursor()
+            cursor.execute("SELECT user_id, password, is_approved FROM users WHERE email=?", (email,))
+            user = cursor.fetchone()
+            cursor.close()
+            db.close()
 
-        flash("Invalid email or password", "danger")
+            if user and bcrypt.checkpw(password.encode('utf-8'), user[1].encode('utf-8')):
+                if not user[2]:  # Check if the user is approved
+                    flash("Account pending approval.", "danger")
+                    return render_template("login.html")
+                session["user_id"] = user[0]
+                session["email"] = email
+                session['last_activity'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                return redirect("/dashboard")
+
+            flash("Invalid email or password", "danger")
+        except Exception as e:
+            print(f"Error during login: {e}")
+            flash("An error occurred while processing your request. Please try again.", "danger")
 
     return render_template("login.html", show_navbar=True)
 
@@ -966,58 +900,143 @@ def generate_pdf():
         flash("Error generating PDF report.", "error")
         return redirect(url_for('results'))
 
-# Route to get DNS information and perform lookups
-@app.route('/emailsecurity-results', methods=['POST'])
+#dns.resolver.resolve(f'selector1._domainkey.{domain}', 'TXT')
+
+
+
+def is_valid_dkim_record(domain, selector="selector1", record_type="TXT"):
+    dkim_name = f"{selector}._domainkey.{domain}"
+    try:
+        print(f"🔍 Checking DKIM record: {dkim_name}")
+        records = dns.resolver.resolve(dkim_name, record_type)
+        for record in records:
+            if "v=DKIM1" in record.to_text():
+                print(f"✅ Valid DKIM record found: {dkim_name}")
+                return True
+        print(f"❌ DKIM record exists but is not valid: {dkim_name}")
+        return False
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout) as e:
+        print(f"❌ DKIM record does not exist: {dkim_name} - Error: {e}")
+        return False
+
+
+def has_valid_dkim(domain):
+    selectors = ["default", "selector1", "google", "mail", "email", "d365"]
+    for selector in selectors:
+        if is_valid_dkim_record(domain, selector):
+            return True
+    print(f"❌ No valid DKIM record found for any known selectors for domain: {domain}")
+    return False
+
+
+def is_valid_mta_sts_record(name):
+    try:
+        records = dns.resolver.resolve(name, "TXT")
+        for record in records:
+            if "v=STSv1" in record.to_text():
+                print(f"✅ Valid MTA-STS record found: {name}")
+                return True
+        print(f"❌ No valid MTA-STS record found: {name}")
+        return False
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout):
+        print(f"❌ MTA-STS record does not exist: {name}")
+        return False
+
+
+def dns_record_exists(name, record_type="TXT"):
+    try:
+        print(f"🔍 Checking DNS record: {name} ({record_type})")
+        dns.resolver.resolve(name, record_type)
+        print(f"✅ DNS record exists: {name} ({record_type})")
+        return True
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout) as e:
+        print(f"❌ DNS record does not exist: {name} ({record_type}) - Error: {e}")
+        return False
+
+
+def check_dmarc_aligned(domain):
+    dmarc_present = dns_record_exists(f"_dmarc.{domain}", "TXT")
+    dkim_configured = has_valid_dkim(domain)
+    mta_sts_txt = dns_record_exists(f"_mta-sts.{domain}", "TXT")
+    mta_sts_policy = dns_record_exists(f"mta-sts.{domain}", "A")
+
+    print(f"✅ DMARC Presence: {dmarc_present}")
+    print(f"✅ DKIM Presence: {dkim_configured}")
+    print(f"✅ MTA-STS TXT Presence: {mta_sts_txt}")
+    print(f"✅ MTA-STS A record Presence: {mta_sts_policy}")
+
+    if dmarc_present and (dkim_configured or (mta_sts_txt and mta_sts_policy)):
+        print(f"✅ Alignment: DMARC + {'DKIM' if dkim_configured else 'MTA-STS'}")
+        return "yes"
+
+    print("❌ Alignment: Incomplete - requires DMARC + (DKIM or MTA-STS)")
+    return "no"
+
+
+@app.route('/emailsecurity-results', methods=['POST'], endpoint='emailsecurity_results_handler')
 @login_required
-def results():
-    domain = request.form['domain']
+def emailsecurity_results():
+    domain = request.form.get('domain', '').strip()
+
     mx_results = mx_lookup(domain)
     dmarc_results = dmarc_lookup(domain)
-    dkim_results = dkim_lookup(domain)  
-    spf_results = spf_lookup(domain)   
+    dkim_results = dkim_lookup(domain)
+    spf_results = spf_lookup(domain)
     dns_results = dns_lookup(domain)
     mta_sts_results = mta_sts_lookup(domain)
     txt_results = txt_lookup(domain)
     hosting_provider = dns_hosting_provider(domain)
     dns_provider = get_dns_hosting_provider(domain)
 
-    print("asdf")
+    blocklist_status = []
+    resolved_ips = []
 
-    domain = request.form.get('domain', '').strip()
-    blocklist_status = []  # Initialize as an empty list
-    resolved_ips = []  # To store resolved IP addresses
-    print("asdf2")
     try:
-        # Resolve the domain to its IP addresses
-        ip_addresses = resolver.resolve(domain, 'A')  # 'A' record for IPv4
-
+        ip_addresses = dns.resolver.resolve(domain, 'A')
         for ip in ip_addresses:
-            ip = ip.to_text()  # Convert the IP address object to string
-            resolved_ips.append(ip)  # Add to resolved IPs list
+            ip = ip.to_text()
+            resolved_ips.append(ip)
             try:
-                # Fetch blocklist status for each IP
                 status = get_blocklist_status(ip)
                 blocklist_status.append({"ip": ip, "status": status})
             except Exception as e:
                 blocklist_status.append({"ip": ip, "status": {"error": f"Error: {e}"}})
-    except resolver.NXDOMAIN:
+    except dns.resolver.NXDOMAIN:
         flash(f"Domain '{domain}' does not exist.", "danger")
-    except resolver.NoAnswer:
+    except dns.resolver.NoAnswer:
         flash(f"No A record found for the domain '{domain}'.", "danger")
-    except resolver.Timeout:
+    except dns.resolver.Timeout:
         flash(f"DNS resolution for the domain '{domain}' timed out.", "danger")
     except Exception as e:
         flash(f"An error occurred while resolving IP addresses for '{domain}': {e}", "danger")
 
-
-
-    # Get location for the first IP in DNS results
     ip_location = {}
-    if (dns_results and isinstance(dns_results, list)):
+    if dns_results and isinstance(dns_results, list):
         ip_location = get_ip_location(dns_results[0].strip())
 
-    return render_template('results.html', domain=domain, dns_provider=dns_provider, hosting_provider=hosting_provider, txt_results=txt_results, mta_sts_results=mta_sts_results, mx_results=mx_results, dmarc_results=dmarc_results, dkim_results=dkim_results, spf_results=spf_results, dns_results=dns_results, blocklist_status=blocklist_status, ip_location=ip_location, current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_security=True)
- 
+    dmarc_aligned = check_dmarc_aligned(domain)
+
+    return render_template(
+        'results.html',
+        domain=domain,
+        dns_provider=dns_provider,
+        hosting_provider=hosting_provider,
+        txt_results=txt_results,
+        mta_sts_results=mta_sts_results,
+        mx_results=mx_results,
+        dmarc_results=dmarc_results,
+        dkim_results=dkim_results,
+        spf_results=spf_results,
+        dns_results=dns_results,
+        blocklist_status=blocklist_status,
+        ip_location=ip_location,
+        dmarc_aligned=dmarc_aligned,
+        current_datetime=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        email_security=True
+    )
+
+
+
 @app.route('/view-profile')
 def view_profile():
     if ('user_id' not in session):
