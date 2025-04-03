@@ -37,7 +37,7 @@
     <div class="modal-content shadow-lg rounded-4">
       <div class="modal-header border-0">
         <h5 class="modal-title fw-bold text-dark" id="logoutModalLabel">Confirm Logout</h5>
-        <a href="{{ url_for('dashboard') }}" class="btn-close position-absolute top-0 end-0 m-3" aria-label="Close"></a>
+        <a href="{{ request.referrer }}" class="btn-close position-absolute top-0 end-0 m-3" aria-label="Close"></a>
       </div>
 
       <div class="modal-body text-center text-dark">
@@ -46,7 +46,7 @@
 
       <div class="modal-footer border-0 d-flex justify-content-between">
         <!-- No, Go Back -->
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary px-4">
+        <a href="{{ request.referrer }}" class="btn btn-outline-secondary px-4">
           No, Go Back
         </a>
 

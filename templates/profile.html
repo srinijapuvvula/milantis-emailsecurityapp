@@ -3,7 +3,7 @@
 {% block content %}
 <style>
     .profile-wrapper {
-        min-height: calc(100vh - 85px); /* Adjust based on actual navbar height */
+        min-height: calc(100vh - 150px); /* Adjust based on actual navbar height */
         padding: 1rem;
     }
 
@@ -22,6 +22,13 @@
         }
     }
 </style>
+
+<!-- 🔙 Back Button -->
+<div class="container">
+    <a href="{{ request.referrer }}" class="btn btn-outline-secondary px-4 py-2">
+      &larr; Back
+    </a>
+</div>
 
 <div class="container profile-wrapper d-flex justify-content-center align-items-center">
     <div class="card p-4 rounded-5 shadow w-100" style="max-width: 900px; background: #f8f9fa;">
