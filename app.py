@@ -401,32 +401,77 @@ def fetch_blobs_with_date_ranges(domain_filter=None):
                     })
     return blobs_with_dates
 
+# #old aggregate reports route
+# @app.route('/aggregate_reports')
+# def aggregate_reports():
+#     # Get domain from query parameters for filtering
+#     domain_filter = request.args.get('domain', None)
+#     all_blobs = fetch_blobs_with_date_ranges(domain_filter)  # Pass domain_filter to function
+
+#     return render_template('aggregate_reports.html', blobs=all_blobs, all_blobs=all_blobs)
+
+# #old filter_reports route
+# @app.route('/filter_reports', methods=['POST'])
+# def filter_reports():
+#     start_date = request.form.get('start_date')
+#     end_date = request.form.get('end_date')
+#     start_epoch = date_string_to_epoch(start_date)
+#     end_epoch = date_string_to_epoch(end_date)
+
+#     # Filter using EST dates
+#     all_blobs = fetch_blobs_with_date_ranges()
+#     filtered_blobs = [
+#         blob for blob in all_blobs
+#         if (date_string_to_epoch(blob['begin_time_est']) >= start_epoch and
+#            date_string_to_epoch(blob['end_time_est']) <= end_epoch)
+#     ]
+#     return render_template('aggregate_reports.html', blobs=filtered_blobs, all_blobs=all_blobs)
+
+#new aggregate report and filter_reports routes
 
 @app.route('/aggregate_reports')
 def aggregate_reports():
-    # Get domain from query parameters for filtering
-    domain_filter = request.args.get('domain', None)
-    all_blobs = fetch_blobs_with_date_ranges(domain_filter)  # Pass domain_filter to function
+    # Get filter parameters
+    domain_filter = request.args.get('domain', '').strip()
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    page = int(request.args.get('page', 1))
+    per_page = 10
 
-    return render_template('aggregate_reports.html', blobs=all_blobs, all_blobs=all_blobs)
-
-
-@app.route('/filter_reports', methods=['POST'])
-def filter_reports():
-    start_date = request.form.get('start_date')
-    end_date = request.form.get('end_date')
-    start_epoch = date_string_to_epoch(start_date)
-    end_epoch = date_string_to_epoch(end_date)
-
-    # Filter using EST dates
+    # Fetch all blobs with date range parsing
     all_blobs = fetch_blobs_with_date_ranges()
-    filtered_blobs = [
-        blob for blob in all_blobs
-        if (date_string_to_epoch(blob['begin_time_est']) >= start_epoch and
-           date_string_to_epoch(blob['end_time_est']) <= end_epoch)
-    ]
-    return render_template('aggregate_reports.html', blobs=filtered_blobs, all_blobs=all_blobs)
 
+    # Apply domain filter
+    if domain_filter:
+        all_blobs = [blob for blob in all_blobs if domain_filter.lower() in blob['domain'].lower()]
+
+    # Apply date filter if present
+    if start_date and end_date:
+        start_epoch = date_string_to_epoch(start_date)
+        end_epoch = date_string_to_epoch(end_date)
+        all_blobs = [blob for blob in all_blobs if (
+            date_string_to_epoch(blob['begin_time_est']) >= start_epoch and
+            date_string_to_epoch(blob['end_time_est']) <= end_epoch
+        )]
+
+    # Sort blobs by most recent first
+    all_blobs.sort(key=lambda x: date_string_to_epoch(x['begin_time_est']), reverse=True)
+
+    # Pagination
+    total_items = len(all_blobs)
+    total_pages = (total_items + per_page - 1) // per_page
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_blobs = all_blobs[start:end]
+
+    return render_template(
+        'aggregate_reports.html',
+        show_navbar=True,
+        blobs=paginated_blobs,
+        total_pages=total_pages,
+        page=page,
+        request=request 
+    )
 
 
 @app.route('/view_report/<path:blob_name>')
@@ -468,11 +513,48 @@ def view_report(blob_name):
 
 
 
-# Dashboard Route
+# Old Dashboard Route
+# @app.route('/dashboard')
+# @login_required
+# def dashboard():
+#     return render_template('index.html', show_navbar=True)
+
+
+#new dashboard route
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('index.html', show_navbar=True)
+    domain = session.get('email', '').split("@")[1]if 'email' in session else ''  # Extracting the Domain
+
+    # Connect to the database
+    db = get_db_connection()
+    if db is None:
+        flash("Database connection failed!", "danger")
+        return redirect(url_for('login'))
+
+    try:
+        cursor = db.cursor()
+        # Check if the domain exists in the dmarc_info table
+        cursor.execute("SELECT dmarc_aligned, dmarc_configured FROM dmarc_info WHERE domain_name = ?", (domain,))
+        domain_info = cursor.fetchone()
+        cursor.close()
+        db.close()
+
+        if domain_info:
+            dmarc_aligned, dmarc_configured = domain_info
+            if dmarc_aligned == "yes" and dmarc_configured == "yes":
+                render_button = True
+            else:
+                render_button= False
+        else:
+            render_button=False
+
+    except Exception as e:
+        flash(f"Database error: {str(e)}", "danger")
+        return redirect(url_for('login'))
+
+    return render_template('index.html', show_navbar=True, render_button=render_button)
+
 
 # Default Route
 @app.route('/')
